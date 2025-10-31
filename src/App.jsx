@@ -1,29 +1,86 @@
 import React, { useState, useEffect } from 'react'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from './config/firebase'
+import { 
+  createOrder, 
+  getAllOrders, 
+  getCustomerOrders, 
+  updateOrderStatus, 
+  deleteOrder,
+  getUserRole 
+} from './services/firebaseService'
 import Header from './components/Header'
 import Menu from './components/Menu'
 import Cart from './components/Cart'
 import OrderForm from './components/OrderForm'
 import OrdersList from './components/OrdersList'
+import Login from './components/Login'
 import './App.css'
 
 function App() {
   const [cart, setCart] = useState([])
   const [showCart, setShowCart] = useState(false)
   const [showOrderForm, setShowOrderForm] = useState(false)
-  const [currentView, setCurrentView] = useState('menu') // 'menu' ou 'orders'
+  const [showLogin, setShowLogin] = useState(false)
+  const [currentView, setCurrentView] = useState('menu')
   const [orders, setOrders] = useState([])
+  const [user, setUser] = useState(null)
+  const [userRole, setUserRole] = useState('customer')
+  const [isAdmin, setIsAdmin] = useState(false)
 
-  // Charger les commandes depuis localStorage au démarrage
+  // Écouter les changements d'authentification
   useEffect(() => {
-    const savedOrders = localStorage.getItem('caroDeliceOrders')
-    if (savedOrders) {
-      try {
-        setOrders(JSON.parse(savedOrders))
-      } catch (e) {
-        console.error('Erreur lors du chargement des commandes:', e)
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser)
+      
+      if (currentUser) {
+        // Vérifier le rôle de l'utilisateur
+        const role = await getUserRole(currentUser.uid)
+        console.log('Rôle détecté pour', currentUser.uid, ':', role)
+        setUserRole(role)
+        setIsAdmin(role === 'admin')
+        console.log('isAdmin défini à:', role === 'admin')
+      } else {
+        setUserRole('customer')
+        setIsAdmin(false)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  // Charger les commandes depuis Firebase
+  useEffect(() => {
+    let unsubscribe
+
+    if (isAdmin) {
+      // Admin voit toutes les commandes
+      unsubscribe = getAllOrders((ordersList) => {
+        setOrders(ordersList)
+      })
+    } else if (user) {
+      // Client connecté voit ses commandes (par ID)
+      // Le téléphone sera récupéré depuis les commandes existantes si nécessaire
+      unsubscribe = getCustomerOrders(user.uid, (ordersList) => {
+        setOrders(ordersList)
+      })
+    } else {
+      // Pas connecté = pas de commandes visibles
+      setOrders([])
+    }
+
+    return () => {
+      // Nettoyer les abonnements avant de changer d'état
+      if (unsubscribe) {
+        try {
+          unsubscribe()
+        } catch (error) {
+          // Ignorer les erreurs de nettoyage
+          console.warn('Erreur lors du nettoyage des abonnements:', error)
+        }
       }
     }
-  }, [])
+  }, [user, isAdmin])
 
   const addToCart = (item) => {
     setCart((prevCart) => {
@@ -59,64 +116,125 @@ function App() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
   }
 
-  const handleOrder = (orderInfo) => {
+  const handleOrder = async (orderInfo) => {
     const total = getTotalPrice()
-    const newOrder = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      items: [...cart],
-      total,
-      ...orderInfo,
-      status: 'en attente'
+    
+    try {
+      const orderData = {
+        items: [...cart],
+        total,
+        customerName: orderInfo.name,
+        customerPhone: orderInfo.phone,
+        customerEmail: user?.email || orderInfo.email || '',
+        customerId: user?.uid || null, // null si pas connecté
+        paymentMethod: orderInfo.paymentMethod,
+        deliveryType: orderInfo.deliveryType || 'sur-place',
+        roomNumber: orderInfo.roomNumber || null,
+        deliveryAddress: orderInfo.deliveryType === 'livraison' 
+          ? `Chambre ${orderInfo.roomNumber}` 
+          : 'Chambre C-75',
+        notes: orderInfo.notes || '',
+        status: 'en attente',
+        createdAt: new Date().toISOString()
+      }
+
+      await createOrder(orderData)
+      
+      const deliveryInfo = orderInfo.deliveryType === 'livraison' 
+        ? `Livraison: Chambre ${orderInfo.roomNumber}`
+        : 'Retrait: Chambre C-75'
+      
+      alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod === 'wave' ? 'Wave' : orderInfo.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}\n${deliveryInfo}\n\nNous préparons votre commande. Merci!`)
+      
+      setCart([])
+      setShowCart(false)
+      setShowOrderForm(false)
+    } catch (error) {
+      console.error('Erreur lors de la création de la commande:', error)
+      alert('Erreur lors de la création de la commande. Veuillez réessayer.')
     }
-    
-    // Sauvegarder dans localStorage
-    setOrders(prevOrders => {
-      const updatedOrders = [newOrder, ...prevOrders]
-      localStorage.setItem('caroDeliceOrders', JSON.stringify(updatedOrders))
-      return updatedOrders
-    })
-    
-    alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod}\nRetrait: Chambre C-75\n\nNous préparons votre commande. Merci!`)
-    
-    setCart([])
-    setShowCart(false)
-    setShowOrderForm(false)
   }
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map(order =>
-      order.id === orderId ? { ...order, status: newStatus } : order
-    )
-    setOrders(updatedOrders)
-    localStorage.setItem('caroDeliceOrders', JSON.stringify(updatedOrders))
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus)
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error)
+      alert('Erreur lors de la mise à jour du statut.')
+    }
   }
 
-  const deleteOrder = (orderId) => {
+  const handleDeleteOrder = async (orderId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette commande ?')) {
-      const updatedOrders = orders.filter(order => order.id !== orderId)
-      setOrders(updatedOrders)
-      localStorage.setItem('caroDeliceOrders', JSON.stringify(updatedOrders))
+      try {
+        await deleteOrder(orderId)
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error)
+        alert('Erreur lors de la suppression de la commande.')
+      }
     }
   }
+
+  const handleLogin = (email) => {
+    setShowLogin(false)
+    // La fonction onAuthStateChanged va mettre à jour user automatiquement
+  }
+
+  const handleLogout = async () => {
+    try {
+      // Réinitialiser l'état avant la déconnexion pour éviter les erreurs
+      setOrders([])
+      setCurrentView('menu')
+      setShowCart(false)
+      setShowOrderForm(false)
+      // Attendre un peu pour que les abonnements se nettoient
+      await new Promise(resolve => setTimeout(resolve, 100))
+      await signOut(auth)
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error)
+      // Continuer même en cas d'erreur
+      setOrders([])
+      setCurrentView('menu')
+    }
+  }
+
+  // Réinitialiser la vue quand l'utilisateur se déconnecte
+  useEffect(() => {
+    if (!user) {
+      setCurrentView('menu')
+    }
+  }, [user])
 
   return (
     <div className="App">
       <Header 
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)} 
         onCartClick={() => setShowCart(!showCart)}
+        user={user}
+        isAdmin={isAdmin}
+        onLoginClick={() => setShowLogin(true)}
+        onLogoutClick={handleLogout}
         currentView={currentView}
         onViewChange={setCurrentView}
         ordersCount={orders.filter(o => o.status === 'en attente').length}
       />
       <main>
         {currentView === 'menu' ? (
-          <Menu addToCart={addToCart} />
+          isAdmin ? (
+            <div style={{padding: '2rem', textAlign: 'center'}}>
+              <h2>Bienvenue dans l'espace Admin</h2>
+              <p>Utilisez l'onglet "Commandes" pour gérer les commandes.</p>
+            </div>
+          ) : (
+            <Menu addToCart={addToCart} />
+          )
         ) : (
           <OrdersList 
             orders={orders}
-            onUpdateStatus={updateOrderStatus}
-            onDelete={deleteOrder}
+            onUpdateStatus={handleUpdateOrderStatus}
+            onDelete={handleDeleteOrder}
+            isAdmin={isAdmin}
+            currentUserId={user?.uid}
           />
         )}
       </main>
@@ -138,6 +256,14 @@ function App() {
           total={getTotalPrice()}
           onClose={() => setShowOrderForm(false)}
           onOrder={handleOrder}
+          user={user}
+        />
+      )}
+      {showLogin && (
+        <Login
+          onLogin={handleLogin}
+          onClose={() => setShowLogin(false)}
+          isAdmin={isAdmin}
         />
       )}
     </div>
@@ -145,4 +271,3 @@ function App() {
 }
 
 export default App
-

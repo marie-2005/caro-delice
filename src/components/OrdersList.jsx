@@ -1,9 +1,14 @@
 import React from 'react'
 import './OrdersList.css'
 
-function OrdersList({ orders, onUpdateStatus, onDelete }) {
+function OrdersList({ orders, onUpdateStatus, onDelete, isAdmin, currentUserId }) {
   const formatDate = (dateString) => {
+    if (!dateString) return 'Date inconnue'
     const date = new Date(dateString)
+    // Vérifier si la date est valide
+    if (isNaN(date.getTime())) {
+      return 'Date invalide'
+    }
     return new Intl.DateTimeFormat('fr-FR', {
       day: '2-digit',
       month: '2-digit',
@@ -53,7 +58,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete }) {
   if (orders.length === 0) {
     return (
       <div className="orders-empty">
-        <p>Aucune commande pour le moment</p>
+        <p>{isAdmin ? 'Aucune commande pour le moment' : 'Vous n\'avez aucune commande. Connectez-vous pour voir vos commandes passées.'}</p>
       </div>
     )
   }
@@ -62,7 +67,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete }) {
     <div className="orders-list">
       <h2 className="orders-title">Liste des Commandes</h2>
       
-      {pendingOrders.length > 0 && (
+      {isAdmin && pendingOrders.length > 0 && (
         <div className="orders-section">
           <h3 className="section-title">En attente ({pendingOrders.length})</h3>
           <div className="orders-grid">
@@ -75,17 +80,18 @@ function OrdersList({ orders, onUpdateStatus, onDelete }) {
                 getStatusLabel={getStatusLabel}
                 onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
+                isAdmin={isAdmin}
               />
             ))}
           </div>
         </div>
       )}
 
-      {otherOrders.length > 0 && (
+      {(isAdmin ? otherOrders : orders).length > 0 && (
         <div className="orders-section">
-          <h3 className="section-title">Autres commandes ({otherOrders.length})</h3>
+          <h3 className="section-title">{isAdmin ? `Autres commandes (${otherOrders.length})` : 'Mes commandes'}</h3>
           <div className="orders-grid">
-            {otherOrders.map((order) => (
+            {(isAdmin ? otherOrders : orders).map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -94,6 +100,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete }) {
                 getStatusLabel={getStatusLabel}
                 onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
+                isAdmin={isAdmin}
               />
             ))}
           </div>
@@ -103,13 +110,13 @@ function OrdersList({ orders, onUpdateStatus, onDelete }) {
   )
 }
 
-function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete }) {
+function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin }) {
   return (
     <div className="order-card">
       <div className="order-header-card">
         <div>
           <div className="order-id">Commande #{order.id.toString().slice(-6)}</div>
-          <div className="order-date">{formatDate(order.date)}</div>
+          <div className="order-date">{formatDate(order.createdAt || order.date)}</div>
         </div>
         <span className={`order-status ${getStatusColor(order.status)}`}>
           {getStatusLabel(order.status)}
@@ -117,8 +124,16 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
       </div>
 
       <div className="order-customer">
-        <div><strong>Client:</strong> {order.name}</div>
-        <div><strong>Téléphone:</strong> {order.phone}</div>
+        <div><strong>Client:</strong> {order.customerName || order.name}</div>
+        <div><strong>Téléphone:</strong> {order.customerPhone || order.phone}</div>
+        {order.customerEmail && <div><strong>Email:</strong> {order.customerEmail}</div>}
+        <div><strong>Mode:</strong> {order.deliveryType === 'livraison' ? 'Livraison' : 'Sur place'}</div>
+        {order.deliveryType === 'livraison' && order.roomNumber && (
+          <div><strong>Chambre:</strong> {order.roomNumber}</div>
+        )}
+        {order.deliveryType === 'sur-place' && (
+          <div><strong>Retrait:</strong> Chambre C-75</div>
+        )}
         <div><strong>Paiement:</strong> {order.paymentMethod === 'wave' ? 'Wave' : order.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}</div>
       </div>
 
@@ -143,7 +158,7 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
         <strong>Total: {order.total.toLocaleString()} FCFA</strong>
       </div>
 
-      {order.status !== 'livrée' && order.status !== 'annulée' && (
+      {isAdmin && (
         <div className="order-actions">
           <select
             value={order.status}
