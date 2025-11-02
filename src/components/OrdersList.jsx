@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import './OrdersList.css'
 
-function OrdersList({ orders, onUpdateStatus, onDelete, isAdmin, currentUserId }) {
+function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId }) {
+  // Par défaut, afficher les commandes du samedi en cours pour l'admin
+  const [dateFilter, setDateFilter] = useState(isAdmin ? 'ce-samedi' : 'toutes')
+  const [statusFilter, setStatusFilter] = useState('tous')
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue'
     const date = new Date(dateString)
@@ -52,8 +55,132 @@ function OrdersList({ orders, onUpdateStatus, onDelete, isAdmin, currentUserId }
     }
   }
 
-  const pendingOrders = orders.filter(o => o.status === 'en attente')
-  const otherOrders = orders.filter(o => o.status !== 'en attente')
+  // Fonction pour obtenir l'ordre de priorité du statut
+  const getStatusPriority = (status) => {
+    switch (status) {
+      case 'en attente':
+        return 1
+      case 'en préparation':
+        return 2
+      case 'prête':
+        return 3
+      case 'livrée':
+        return 4
+      case 'annulée':
+        return 5
+      default:
+        return 99
+    }
+  }
+
+  // Trier les commandes : d'abord par statut, puis par date (plus récente en premier)
+  const sortOrders = (ordersList) => {
+    return [...ordersList].sort((a, b) => {
+      // D'abord trier par statut (priorité)
+      const statusA = getStatusPriority(a.status)
+      const statusB = getStatusPriority(b.status)
+      
+      if (statusA !== statusB) {
+        return statusA - statusB
+      }
+      
+      // Si même statut, trier par date (plus récente en premier)
+      const dateA = a.createdAt || a.date || ''
+      const dateB = b.createdAt || b.date || ''
+      
+      if (dateA && dateB) {
+        return new Date(dateB) - new Date(dateA)
+      }
+      
+      return 0
+    })
+  }
+
+  // Fonction pour obtenir le samedi de cette semaine
+  const getThisSaturday = () => {
+    const now = new Date()
+    const day = now.getDay() // 0 = dimanche, 6 = samedi
+    const diff = 6 - day // Nombre de jours jusqu'au samedi (0 si on est samedi)
+    
+    // Créer la date du samedi (début de la journée à 00:00)
+    const saturday = new Date(now)
+    if (diff === 6) {
+      // Si dimanche, prendre samedi dernier
+      saturday.setDate(now.getDate() - 1)
+    } else {
+      saturday.setDate(now.getDate() + diff)
+    }
+    saturday.setHours(0, 0, 0, 0)
+    
+    return saturday
+  }
+
+  // Fonction pour obtenir le dimanche suivant (fin du samedi à 23:59:59)
+  const getNextSunday = (saturday) => {
+    const sunday = new Date(saturday)
+    sunday.setDate(saturday.getDate() + 1)
+    sunday.setHours(23, 59, 59, 999)
+    return sunday
+  }
+
+  // Fonction pour filtrer par date
+  const filterByDate = (orderList) => {
+    if (dateFilter === 'toutes') return orderList
+    
+    const now = new Date()
+    
+    switch (dateFilter) {
+      case 'ce-samedi':
+        // Commandes du samedi en cours (du samedi 00:00 au dimanche 23:59)
+        const thisSaturday = getThisSaturday()
+        const nextSunday = getNextSunday(thisSaturday)
+        return orderList.filter(order => {
+          const orderDate = new Date(order.createdAt || order.date)
+          return orderDate >= thisSaturday && orderDate <= nextSunday
+        })
+      case 'heure':
+        // Dernière heure
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+        return orderList.filter(order => {
+          const orderDate = new Date(order.createdAt || order.date)
+          return orderDate >= oneHourAgo
+        })
+      case 'semaine':
+        // Dernière semaine (7 derniers jours)
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        return orderList.filter(order => {
+          const orderDate = new Date(order.createdAt || order.date)
+          return orderDate >= oneWeekAgo
+        })
+      case 'mois':
+        // Dernier mois (30 derniers jours)
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        return orderList.filter(order => {
+          const orderDate = new Date(order.createdAt || order.date)
+          return orderDate >= oneMonthAgo
+        })
+      default:
+        return orderList
+    }
+  }
+
+  // Fonction pour filtrer par statut
+  const filterByStatus = (orderList) => {
+    if (statusFilter === 'tous') return orderList
+    return orderList.filter(order => order.status === statusFilter)
+  }
+
+  // Filtrer et trier les commandes
+  let filteredOrders = orders
+  
+  // Appliquer le filtre de statut
+  filteredOrders = filterByStatus(filteredOrders)
+  
+  // Appliquer le filtre de date
+  filteredOrders = filterByDate(filteredOrders)
+  
+  // Trier les commandes filtrées (par statut puis par date)
+  const sortedOrders = sortOrders(filteredOrders)
 
   if (orders.length === 0) {
     return (
@@ -65,13 +192,65 @@ function OrdersList({ orders, onUpdateStatus, onDelete, isAdmin, currentUserId }
 
   return (
     <div className="orders-list">
-      <h2 className="orders-title">Liste des Commandes</h2>
+      <div className="orders-header">
+        <h2 className="orders-title">Liste des Commandes</h2>
+        
+        {/* Bouton visible UNIQUEMENT pour les admins */}
+        {isAdmin === true && onDeleteAll && (
+          <button 
+            className="delete-all-button"
+            onClick={onDeleteAll}
+            title="Supprimer toutes les commandes de test (Admin uniquement)"
+          >
+            🗑️ Supprimer toutes les commandes
+          </button>
+        )}
+        
+        <div className="orders-filters">
+          <div className="filter-group">
+            <label htmlFor="date-filter">Date :</label>
+            <select
+              id="date-filter"
+              className="filter-select"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            >
+              <option value="toutes">Toutes</option>
+              <option value="ce-samedi">Ce samedi</option>
+              <option value="heure">Dernière heure</option>
+              <option value="semaine">Dernière semaine</option>
+              <option value="mois">Dernier mois</option>
+            </select>
+          </div>
+          
+          <div className="filter-group">
+            <label htmlFor="status-filter">Statut :</label>
+            <select
+              id="status-filter"
+              className="filter-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="tous">Tous</option>
+              <option value="en attente">En attente</option>
+              <option value="en préparation">En préparation</option>
+              <option value="prête">Prête</option>
+              <option value="livrée">Livrée</option>
+              <option value="annulée">Annulée</option>
+            </select>
+          </div>
+        </div>
+      </div>
       
-      {isAdmin && pendingOrders.length > 0 && (
+      {sortedOrders.length > 0 ? (
         <div className="orders-section">
-          <h3 className="section-title">En attente ({pendingOrders.length})</h3>
+          <h3 className="section-title">
+            {isAdmin 
+              ? `Commandes (${sortedOrders.length})` 
+              : `Mes commandes (${sortedOrders.length})`}
+          </h3>
           <div className="orders-grid">
-            {pendingOrders.map((order) => (
+            {sortedOrders.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -85,25 +264,9 @@ function OrdersList({ orders, onUpdateStatus, onDelete, isAdmin, currentUserId }
             ))}
           </div>
         </div>
-      )}
-
-      {(isAdmin ? otherOrders : orders).length > 0 && (
-        <div className="orders-section">
-          <h3 className="section-title">{isAdmin ? `Autres commandes (${otherOrders.length})` : 'Mes commandes'}</h3>
-          <div className="orders-grid">
-            {(isAdmin ? otherOrders : orders).map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                formatDate={formatDate}
-                getStatusColor={getStatusColor}
-                getStatusLabel={getStatusLabel}
-                onUpdateStatus={onUpdateStatus}
-                onDelete={onDelete}
-                isAdmin={isAdmin}
-              />
-            ))}
-          </div>
+      ) : (
+        <div className="orders-empty">
+          <p>Aucune commande ne correspond aux filtres sélectionnés.</p>
         </div>
       )}
     </div>
@@ -177,6 +340,19 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
             title="Supprimer"
           >
             ×
+          </button>
+        </div>
+      )}
+      
+      {!isAdmin && order.status === 'en attente' && (
+        <div className="order-actions">
+          <button
+            className="delete-button"
+            onClick={() => onDelete(order.id)}
+            title="Annuler ma commande"
+            style={{width: '100%', marginTop: '0.5rem'}}
+          >
+            Annuler ma commande
           </button>
         </div>
       )}

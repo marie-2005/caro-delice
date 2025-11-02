@@ -5,7 +5,8 @@ import {
   query, 
   where, 
   orderBy, 
-  updateDoc, 
+  updateDoc,
+  setDoc,
   doc, 
   deleteDoc,
   getDoc,
@@ -21,9 +22,38 @@ export const createOrder = async (orderData) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
+    
+    // Envoyer une notification email (ne bloque pas si ça échoue)
+    try {
+      const { sendNewOrderNotification } = await import('./notificationService')
+      await sendNewOrderNotification({
+        ...orderData,
+        orderId: docRef.id
+      })
+    } catch (notifError) {
+      // Ignorer les erreurs de notification pour ne pas bloquer la création
+      console.warn('Notification non envoyée:', notifError)
+    }
+    
     return docRef.id
   } catch (error) {
     console.error('Erreur lors de la création de la commande:', error)
+    throw error
+  }
+}
+
+// Mettre à jour le statut de paiement d'une commande
+export const updatePaymentStatus = async (orderId, paymentStatus, paymentLink = null) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId)
+    await updateDoc(orderRef, {
+      paymentStatus,
+      paymentLink,
+      status: paymentStatus === 'payé' ? 'en attente' : 'en attente de paiement',
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du statut de paiement:', error)
     throw error
   }
 }
@@ -92,6 +122,20 @@ export const deleteOrder = async (orderId) => {
   }
 }
 
+// Supprimer toutes les commandes (utilitaire pour nettoyer les tests)
+export const deleteAllOrders = async () => {
+  try {
+    const ordersSnapshot = await getDocs(collection(db, 'orders'))
+    const deletePromises = ordersSnapshot.docs.map(doc => deleteDoc(doc.ref))
+    await Promise.all(deletePromises)
+    console.log(`✅ ${ordersSnapshot.docs.length} commande(s) supprimée(s)`)
+    return { success: true, count: ordersSnapshot.docs.length }
+  } catch (error) {
+    console.error('Erreur lors de la suppression de toutes les commandes:', error)
+    throw error
+  }
+}
+
 // Obtenir le rôle d'un utilisateur
 export const getUserRole = async (userId) => {
   try {
@@ -109,6 +153,57 @@ export const getUserRole = async (userId) => {
   } catch (error) {
     console.error('Erreur lors de la récupération du rôle:', error)
     return 'customer'
+  }
+}
+
+// Obtenir le profil d'un utilisateur
+export const getUserProfile = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    if (userDoc.exists()) {
+      return userDoc.data()
+    }
+    return null
+  } catch (error) {
+    console.error('Erreur lors de la récupération du profil:', error)
+    throw error
+  }
+}
+
+// Mettre à jour le profil d'un utilisateur
+export const updateUserProfile = async (userId, profileData) => {
+  try {
+    const userRef = doc(db, 'users', userId)
+    
+    // Ne pas permettre la modification de l'email et du téléphone s'ils existent déjà
+    // (car ils sont utilisés pour identifier les commandes)
+    const existingDoc = await getDoc(userRef)
+    const existingData = existingDoc.exists() ? existingDoc.data() : {}
+    
+    // Préserver les données importantes
+    const updateData = {
+      ...profileData,
+      // Préserver l'email et le téléphone existants (non modifiables)
+      email: existingData.email || null,
+      phone: existingData.phone || null,
+      // Préserver le rôle
+      role: existingData.role || existingData.rôle || 'customer',
+      updatedAt: new Date().toISOString()
+    }
+
+    if (existingDoc.exists()) {
+      // Mettre à jour le document existant
+      await updateDoc(userRef, updateData)
+    } else {
+      // Créer le document s'il n'existe pas avec setDoc (merge permet de ne pas écraser)
+      await setDoc(userRef, {
+        ...updateData,
+        createdAt: new Date().toISOString()
+      }, { merge: true })
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du profil:', error)
+    throw error
   }
 }
 

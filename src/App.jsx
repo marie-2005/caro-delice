@@ -7,6 +7,7 @@ import {
   getCustomerOrders, 
   updateOrderStatus, 
   deleteOrder,
+  deleteAllOrders,
   getUserRole 
 } from './services/firebaseService'
 import Header from './components/Header'
@@ -15,6 +16,7 @@ import Cart from './components/Cart'
 import OrderForm from './components/OrderForm'
 import OrdersList from './components/OrdersList'
 import Login from './components/Login'
+import Profile from './components/Profile'
 import './App.css'
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
   const [showCart, setShowCart] = useState(false)
   const [showOrderForm, setShowOrderForm] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [currentView, setCurrentView] = useState('menu')
   const [orders, setOrders] = useState([])
   const [user, setUser] = useState(null)
@@ -134,17 +137,25 @@ function App() {
           ? `Chambre ${orderInfo.roomNumber}` 
           : 'Chambre C-75',
         notes: orderInfo.notes || '',
-        status: 'en attente',
+        status: orderInfo.paymentMethod === 'wave' && orderInfo.paymentStatus === 'en_attente' 
+          ? 'en attente de paiement' 
+          : 'en attente',
+        paymentStatus: orderInfo.paymentStatus || null,
+        paymentLink: orderInfo.paymentLink || null,
         createdAt: new Date().toISOString()
       }
 
-      await createOrder(orderData)
+      const orderId = await createOrder(orderData)
       
       const deliveryInfo = orderInfo.deliveryType === 'livraison' 
         ? `Livraison: Chambre ${orderInfo.roomNumber}`
         : 'Retrait: Chambre C-75'
       
-      alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod === 'wave' ? 'Wave' : orderInfo.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}\n${deliveryInfo}\n\nNous préparons votre commande. Merci!`)
+      if (orderInfo.paymentMethod === 'wave' && orderInfo.paymentLink) {
+        alert(`Commande créée! Total: ${total.toLocaleString()} FCFA\n\nUn lien de paiement Wave a été ouvert dans un nouvel onglet.\n\n${deliveryInfo}\n\nVeuillez compléter le paiement pour valider votre commande.`)
+      } else {
+        alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod === 'wave' ? 'Wave' : orderInfo.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}\n${deliveryInfo}\n\nNous préparons votre commande. Merci!`)
+      }
       
       setCart([])
       setShowCart(false)
@@ -165,9 +176,18 @@ function App() {
   }
 
   const handleDeleteOrder = async (orderId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette commande ?')) {
+    const order = orders.find(o => o.id === orderId)
+    const isOwnOrder = !isAdmin && order?.customerId === user?.uid
+    const message = isOwnOrder 
+      ? 'Êtes-vous sûr de vouloir annuler votre commande ?'
+      : 'Êtes-vous sûr de vouloir supprimer cette commande ?'
+    
+    if (window.confirm(message)) {
       try {
         await deleteOrder(orderId)
+        if (isOwnOrder) {
+          alert('Votre commande a été annulée.')
+        }
       } catch (error) {
         console.error('Erreur lors de la suppression:', error)
         alert('Erreur lors de la suppression de la commande.')
@@ -217,6 +237,7 @@ function App() {
         currentView={currentView}
         onViewChange={setCurrentView}
         ordersCount={orders.filter(o => o.status === 'en attente').length}
+        onProfileClick={() => setShowProfile(true)}
       />
       <main>
         {currentView === 'menu' ? (
@@ -226,13 +247,28 @@ function App() {
               <p>Utilisez l'onglet "Commandes" pour gérer les commandes.</p>
             </div>
           ) : (
-            <Menu addToCart={addToCart} />
+            <Menu 
+              cart={cart}
+              addToCart={addToCart} 
+              updateQuantity={updateQuantity}
+            />
           )
         ) : (
           <OrdersList 
             orders={orders}
             onUpdateStatus={handleUpdateOrderStatus}
             onDelete={handleDeleteOrder}
+            onDeleteAll={isAdmin ? async () => {
+              if (window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer TOUTES les commandes ? Cette action est irréversible !')) {
+                try {
+                  const result = await deleteAllOrders()
+                  alert(`✅ ${result.count} commande(s) supprimée(s) avec succès`)
+                } catch (error) {
+                  console.error('Erreur:', error)
+                  alert('❌ Erreur lors de la suppression: ' + error.message)
+                }
+              }
+            } : undefined}
             isAdmin={isAdmin}
             currentUserId={user?.uid}
           />
@@ -264,6 +300,12 @@ function App() {
           onLogin={handleLogin}
           onClose={() => setShowLogin(false)}
           isAdmin={isAdmin}
+        />
+      )}
+      {showProfile && (
+        <Profile
+          user={user}
+          onClose={() => setShowProfile(false)}
         />
       )}
     </div>
