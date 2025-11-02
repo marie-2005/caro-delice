@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { isCurrentlyOpen, getBusinessStatus } from '../services/businessHoursService'
 import './OrderForm.css'
 
 function OrderForm({ total, onClose, onOrder, user }) {
@@ -11,9 +12,30 @@ function OrderForm({ total, onClose, onOrder, user }) {
     roomNumber: '',
     notes: ''
   })
+  const [isOpen, setIsOpen] = useState(isCurrentlyOpen())
+  const [businessStatus, setBusinessStatus] = useState(getBusinessStatus())
+
+  // Vérifier les horaires toutes les minutes
+  useEffect(() => {
+    const checkHours = () => {
+      setIsOpen(isCurrentlyOpen())
+      setBusinessStatus(getBusinessStatus())
+    }
+    
+    checkHours()
+    const interval = setInterval(checkHours, 60000) // Toutes les minutes
+    
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Vérifier si ouvert
+    if (!isOpen) {
+      alert(`❌ Nous sommes fermés actuellement.\n\n${businessStatus.message}\n\nMerci de réessayer pendant nos heures d'ouverture.`)
+      return
+    }
     
     if (!formData.name || !formData.phone || !formData.paymentMethod) {
       alert('Veuillez remplir le nom, le téléphone et choisir un mode de paiement')
@@ -43,6 +65,12 @@ function OrderForm({ total, onClose, onOrder, user }) {
           <h2>Finaliser votre commande</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
+        {!isOpen && (
+          <div className="closed-alert">
+            <p>🔴 <strong>Fermé actuellement</strong></p>
+            <p className="closed-message">{businessStatus.message}</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
             <label htmlFor="name">Nom *</label>
@@ -167,8 +195,13 @@ function OrderForm({ total, onClose, onOrder, user }) {
             <button type="button" className="cancel-button" onClick={onClose}>
               Annuler
             </button>
-            <button type="submit" className="submit-button">
-              Confirmer la commande
+            <button 
+              type="submit" 
+              className="submit-button"
+              disabled={!isOpen}
+              style={!isOpen ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+            >
+              {isOpen ? 'Confirmer la commande' : 'Fermé - Commande impossible'}
             </button>
           </div>
         </form>

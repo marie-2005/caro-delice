@@ -1,4 +1,5 @@
 import React from 'react'
+import BusinessHours from './BusinessHours'
 import './Menu.css'
 
 const menuItems = [
@@ -59,6 +60,7 @@ function Menu({ cart, addToCart, updateQuantity }) {
 
   return (
     <div className="menu">
+      <BusinessHours />
       <h2 className="menu-title">Notre Menu</h2>
       <div className="menu-grid">
         {menuItems.map((item) => {
