@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { isCurrentlyOpen, getBusinessStatus } from '../services/businessHoursService'
 import './OrderForm.css'
 
-function OrderForm({ total, onClose, onOrder, user }) {
+function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -156,6 +156,17 @@ function OrderForm({ total, onClose, onOrder, user }) {
               <option value="especes">Espèces</option>
             </select>
           </div>
+          {/* Rappel des allergies si enregistrées */}
+          {userProfile && userProfile.allergies && (
+            <div className="allergies-reminder">
+              <div className="reminder-icon">⚠️</div>
+              <div className="reminder-content">
+                <strong>Rappel - Vos allergies/intolérances :</strong>
+                <p>{userProfile.allergies}</p>
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="notes">Notes spéciales (optionnel)</label>
             <textarea
@@ -163,10 +174,30 @@ function OrderForm({ total, onClose, onOrder, user }) {
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="Allergies, préférences, etc."
+              placeholder="Instructions spéciales, préférences, etc."
               rows="3"
             />
           </div>
+          {/* Code promo appliqué */}
+          {(() => {
+            const promoData = sessionStorage.getItem('applied_promo')
+            if (promoData) {
+              try {
+                const promo = JSON.parse(promoData)
+                return (
+                  <div className="promo-applied-info">
+                    <strong>🎁 Code promo appliqué :</strong> {promo.code} (-{promo.discount}%)
+                    <br />
+                    <small>Économie : {promo.discountAmount.toLocaleString()} FCFA</small>
+                  </div>
+                )
+              } catch (e) {
+                return null
+              }
+            }
+            return null
+          })()}
+
           <div className="order-info">
             {formData.deliveryType === 'sur-place' ? (
               <>

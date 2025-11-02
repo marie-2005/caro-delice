@@ -166,6 +166,21 @@
   background: var(--bg-secondary);
 }
 
+.cart-discount {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.discount-amount {
+  color: #10b981;
+  font-weight: 600;
+}
+
 .cart-total {
   font-size: 1.125rem;
   font-weight: 700;

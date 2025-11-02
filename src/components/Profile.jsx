@@ -9,7 +9,8 @@ function Profile({ user, onClose }) {
     name: '',
     phone: '',
     address: '',
-    notes: ''
+    notes: '',
+    allergies: ''
   })
   const [message, setMessage] = useState({ type: '', text: '' })
 
@@ -28,7 +29,8 @@ function Profile({ user, onClose }) {
           name: profile.name || '',
           phone: profile.phone || '',
           address: profile.address || '',
-          notes: profile.notes || ''
+          notes: profile.notes || '',
+          allergies: profile.allergies || ''
         })
       }
     } catch (error) {
@@ -160,16 +162,29 @@ function Profile({ user, onClose }) {
             </div>
 
             <div className="form-group">
+              <label htmlFor="allergies">Allergies / Intolérances *</label>
+              <textarea
+                id="allergies"
+                name="allergies"
+                value={formData.allergies}
+                onChange={handleChange}
+                placeholder="Ex: Arachides, lactose, gluten, etc. (Laissez vide si aucune)"
+                rows="3"
+              />
+              <small className="field-note">Ces informations seront rappelées lors de chaque commande pour votre sécurité</small>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="notes">Notes personnelles (optionnel)</label>
               <textarea
                 id="notes"
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Allergies, préférences, etc."
+                placeholder="Préférences spéciales, goûts, etc."
                 rows="3"
               />
-              <small className="field-note">Ces informations seront utilisées pour vos futures commandes</small>
+              <small className="field-note">Informations générales pour personnaliser vos commandes</small>
             </div>
           </div>
 

@@ -32,7 +32,31 @@ export const createOrder = async (orderData) => {
       })
     } catch (notifError) {
       // Ignorer les erreurs de notification pour ne pas bloquer la création
-      console.warn('Notification non envoyée:', notifError)
+      console.warn('Notification email non envoyée:', notifError)
+    }
+
+    // Envoyer une notification SMS à l'admin (ne bloque pas si ça échoue)
+    try {
+      const { sendNewOrderSMS } = await import('./smsService')
+      await sendNewOrderSMS({
+        ...orderData,
+        orderId: docRef.id
+      })
+    } catch (smsError) {
+      // Ignorer les erreurs de SMS pour ne pas bloquer la création
+      console.warn('Notification SMS non envoyée:', smsError)
+    }
+
+    // Envoyer une confirmation SMS au client (ne bloque pas si ça échoue)
+    try {
+      const { sendOrderConfirmationSMS } = await import('./smsService')
+      await sendOrderConfirmationSMS({
+        ...orderData,
+        orderId: docRef.id
+      })
+    } catch (smsError) {
+      // Ignorer les erreurs de SMS pour ne pas bloquer la création
+      console.warn('SMS confirmation client non envoyé:', smsError)
     }
     
     return docRef.id

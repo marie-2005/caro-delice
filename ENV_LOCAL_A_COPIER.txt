@@ -1,0 +1,8 @@
+# EmailJS Configuration
+VITE_EMAILJS_PUBLIC_KEY=L2OS5qR2NOmM4Dljm
+VITE_EMAILJS_SERVICE_ID=service_aaqs9dk
+VITE_EMAILJS_TEMPLATE_ID=REMPLACEZ_PAR_VOTRE_TEMPLATE_ID
+
+# Email où recevoir les notifications (mettez votre email Gmail)
+VITE_ADMIN_EMAIL=votre-email@gmail.com
+

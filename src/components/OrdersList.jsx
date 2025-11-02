@@ -1,10 +1,17 @@
 import React, { useState } from 'react'
+import { getRemainingTime, getPreparationTime } from '../services/orderStatusService'
+import OrderRating from './OrderRating'
+import DeliveryTracking from './DeliveryTracking'
+import { getOrderRating } from '../services/ratingService'
 import './OrdersList.css'
 
 function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId }) {
   // Par défaut, afficher les commandes du samedi en cours pour l'admin
   const [dateFilter, setDateFilter] = useState(isAdmin ? 'ce-samedi' : 'toutes')
   const [statusFilter, setStatusFilter] = useState('tous')
+  const [ratingOrderId, setRatingOrderId] = useState(null)
+  const [printOrderId, setPrintOrderId] = useState(null)
+  const [trackingOrderId, setTrackingOrderId] = useState(null)
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue'
     const date = new Date(dateString)
@@ -251,16 +258,23 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
           </h3>
           <div className="orders-grid">
             {sortedOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                formatDate={formatDate}
-                getStatusColor={getStatusColor}
-                getStatusLabel={getStatusLabel}
-                onUpdateStatus={onUpdateStatus}
-                onDelete={onDelete}
-                isAdmin={isAdmin}
-              />
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  formatDate={formatDate}
+                  getStatusColor={getStatusColor}
+                  getStatusLabel={getStatusLabel}
+                  onUpdateStatus={onUpdateStatus}
+                  onDelete={onDelete}
+                  isAdmin={isAdmin}
+                  ratingOrderId={ratingOrderId}
+                  setRatingOrderId={setRatingOrderId}
+                  printOrderId={printOrderId}
+                  setPrintOrderId={setPrintOrderId}
+                  trackingOrderId={trackingOrderId}
+                  setTrackingOrderId={setTrackingOrderId}
+                  currentUserId={currentUserId}
+                />
             ))}
           </div>
         </div>
@@ -273,7 +287,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
   )
 }
 
-function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin }) {
+function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin, ratingOrderId, setRatingOrderId, printOrderId, setPrintOrderId, trackingOrderId, setTrackingOrderId, currentUserId }) {
   return (
     <div className="order-card">
       <div className="order-header-card">
@@ -321,6 +335,14 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
         <strong>Total: {order.total.toLocaleString()} FCFA</strong>
       </div>
 
+      {/* Estimation du temps de préparation */}
+      {!isAdmin && (
+        <div className="order-time-estimate">
+          <span className="time-icon">⏱️</span>
+          <span className="time-text">{getRemainingTime(order.status, order.createdAt)}</span>
+        </div>
+      )}
+
       {isAdmin && (
         <div className="order-actions">
           <select
@@ -334,6 +356,13 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
             <option value="livrée">Livrée</option>
             <option value="annulée">Annulée</option>
           </select>
+          <button
+            className="print-button"
+            onClick={() => setPrintOrderId(order.id)}
+            title="Imprimer le ticket"
+          >
+            🖨️
+          </button>
           <button
             className="delete-button"
             onClick={() => onDelete(order.id)}
@@ -355,6 +384,56 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
             Annuler ma commande
           </button>
         </div>
+      )}
+
+      {/* Bouton de notation pour les commandes livrées */}
+      {!isAdmin && (order.status === 'livrée' || order.status === 'prête') && (
+        <div className="order-actions">
+          <button
+            className="rate-button"
+            onClick={() => setRatingOrderId(order.id)}
+            title="Noter le service"
+          >
+            {getOrderRating(order.id) ? '⭐ Voir ma note' : '⭐ Noter le service'}
+          </button>
+        </div>
+      )}
+
+      {/* Modal de notation */}
+      {ratingOrderId === order.id && (
+        <OrderRating
+          orderId={order.id}
+          onClose={() => setRatingOrderId(null)}
+        />
+      )}
+
+      {/* Modal d'impression */}
+      {printOrderId === order.id && (
+        <OrderPrint
+          order={order}
+          onClose={() => setPrintOrderId(null)}
+        />
+      )}
+
+      {/* Bouton de suivi pour les clients (livraison uniquement) */}
+      {!isAdmin && order.deliveryType === 'livraison' && order.status !== 'annulée' && order.status !== 'livrée' && (
+        <div className="order-actions">
+          <button
+            className="tracking-button"
+            onClick={() => setTrackingOrderId(order.id)}
+            title="Suivre ma livraison"
+          >
+            📍 Suivre la livraison
+          </button>
+        </div>
+      )}
+
+      {/* Modal de suivi */}
+      {trackingOrderId === order.id && (
+        <DeliveryTracking
+          order={order}
+          onClose={() => setTrackingOrderId(null)}
+        />
       )}
     </div>
   )

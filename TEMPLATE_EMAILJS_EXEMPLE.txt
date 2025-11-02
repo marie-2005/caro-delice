@@ -1,0 +1,27 @@
+🎉 Nouvelle commande #{{order_id}}
+
+Bonjour,
+
+Vous avez reçu une nouvelle commande !
+
+📦 Commande #{{order_id}}
+👤 Client: {{customer_name}}
+📞 Téléphone: {{customer_phone}}
+📧 Email: {{customer_email}}
+
+💰 Total: {{total}} FCFA
+📋 Statut: {{status}}
+
+🛒 Articles:
+{{items}}
+
+📍 {{delivery_type}}
+💳 Paiement: {{payment_method}}
+
+Notes: {{notes}}
+
+🕐 Date: {{date}}
+
+---
+Les Délices de Caro
+

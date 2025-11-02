@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './config/firebase'
 import { 
@@ -8,7 +8,9 @@ import {
   updateOrderStatus, 
   deleteOrder,
   deleteAllOrders,
-  getUserRole 
+  getUserRole,
+  getUserProfile,
+  updateUserProfile
 } from './services/firebaseService'
 import Header from './components/Header'
 import Menu from './components/Menu'
@@ -17,6 +19,9 @@ import OrderForm from './components/OrderForm'
 import OrdersList from './components/OrdersList'
 import Login from './components/Login'
 import Profile from './components/Profile'
+import Toast from './components/Toast'
+import Dashboard from './components/Dashboard'
+import { getStatusChangeNotification } from './services/orderStatusService'
 import './App.css'
 
 function App() {
@@ -30,6 +35,10 @@ function App() {
   const [user, setUser] = useState(null)
   const [userRole, setUserRole] = useState('customer')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [toasts, setToasts] = useState([])
+  const previousOrdersRef = useRef([])
+  const [userProfile, setUserProfile] = useState(null)
+  const [favorites, setFavorites] = useState([])
 
   // Écouter les changements d'authentification
   useEffect(() => {
@@ -43,33 +52,81 @@ function App() {
         setUserRole(role)
         setIsAdmin(role === 'admin')
         console.log('isAdmin défini à:', role === 'admin')
+        
+        // Charger le profil utilisateur
+        try {
+          const { getUserProfile } = await import('./services/firebaseService')
+          const profile = await getUserProfile(currentUser.uid)
+          if (profile) {
+            setUserProfile(profile)
+            setFavorites(profile.favorites || [])
+          }
+        } catch (error) {
+          console.error('Erreur chargement profil:', error)
+        }
       } else {
         setUserRole('customer')
         setIsAdmin(false)
+        setUserProfile(null)
+        setFavorites([])
       }
     })
 
     return () => unsubscribe()
   }, [])
 
-  // Charger les commandes depuis Firebase
+  // Afficher un toast
+  const showToast = (message, type = 'info') => {
+    const id = Date.now() + Math.random()
+    setToasts(prev => [...prev, { id, message, type }])
+  }
+
+  // Fermer un toast
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
+  }
+
+  // Détecter les changements de statut et afficher des notifications
+  const detectStatusChanges = (oldOrders, newOrders) => {
+    // Créer un map pour accès rapide
+    const oldOrdersMap = new Map(oldOrders.map(order => [order.id, order]))
+
+    newOrders.forEach(newOrder => {
+      const oldOrder = oldOrdersMap.get(newOrder.id)
+      
+      // Si la commande existe et que le statut a changé
+      if (oldOrder && oldOrder.status !== newOrder.status) {
+        const notification = getStatusChangeNotification(oldOrder.status, newOrder.status)
+        showToast(notification.message, notification.type)
+      }
+    })
+  }
+
+  // Charger les commandes depuis Firebase et détecter les changements de statut
   useEffect(() => {
     let unsubscribe
 
     if (isAdmin) {
       // Admin voit toutes les commandes
       unsubscribe = getAllOrders((ordersList) => {
+        // Admin ne reçoit pas de notifications (ils changent les statuts eux-mêmes)
         setOrders(ordersList)
+        previousOrdersRef.current = ordersList
       })
     } else if (user) {
       // Client connecté voit ses commandes (par ID)
-      // Le téléphone sera récupéré depuis les commandes existantes si nécessaire
       unsubscribe = getCustomerOrders(user.uid, (ordersList) => {
+        // Détecter les changements de statut pour les notifications
+        if (previousOrdersRef.current.length > 0) {
+          detectStatusChanges(previousOrdersRef.current, ordersList)
+        }
         setOrders(ordersList)
+        previousOrdersRef.current = ordersList
       })
     } else {
       // Pas connecté = pas de commandes visibles
       setOrders([])
+      previousOrdersRef.current = []
     }
 
     return () => {
@@ -116,7 +173,20 @@ function App() {
   }
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0)
+    const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0)
+    
+    // Appliquer le code promo si présent
+    const promoData = sessionStorage.getItem('applied_promo')
+    if (promoData) {
+      try {
+        const promo = JSON.parse(promoData)
+        return promo.total
+      } catch (e) {
+        console.error('Erreur lecture promo:', e)
+      }
+    }
+    
+    return subtotal
   }
 
   const handleOrder = async (orderInfo) => {
@@ -143,6 +213,18 @@ function App() {
         paymentStatus: orderInfo.paymentStatus || null,
         paymentLink: orderInfo.paymentLink || null,
         createdAt: new Date().toISOString()
+      }
+
+      // Réduire les stocks avant de créer la commande
+      try {
+        const { reduceStock } = await import('./services/stockService')
+        const stockResult = reduceStock(orderData.items)
+        if (stockResult.hasLowStock && stockResult.lowStockItems.length > 0) {
+          const itemsList = stockResult.lowStockItems.map(item => `- ${item.name} (${item.quantity} restant)`).join('\n')
+          console.warn('⚠️ Stock faible détecté:', stockResult.lowStockItems)
+        }
+      } catch (stockError) {
+        console.warn('Erreur gestion stock:', stockError)
       }
 
       const orderId = await createOrder(orderData)
@@ -242,15 +324,38 @@ function App() {
       <main>
         {currentView === 'menu' ? (
           isAdmin ? (
-            <div style={{padding: '2rem', textAlign: 'center'}}>
-              <h2>Bienvenue dans l'espace Admin</h2>
-              <p>Utilisez l'onglet "Commandes" pour gérer les commandes.</p>
-            </div>
+            <Dashboard menuItems={[
+              { id: 1, name: 'Crêpe au Cérélac' },
+              { id: 2, name: 'Crêpe au Nutella' },
+              { id: 3, name: 'Crêpe Nature' },
+              { id: 4, name: 'Crêpe au Jambon/Fromage' },
+              { id: 5, name: 'Crêpe au Viande/Fromage' }
+            ]} />
           ) : (
             <Menu 
               cart={cart}
               addToCart={addToCart} 
               updateQuantity={updateQuantity}
+              user={user}
+              favorites={favorites}
+              onToggleFavorite={async (itemId) => {
+                if (!user) return
+                
+                const newFavorites = favorites.includes(itemId)
+                  ? favorites.filter(id => id !== itemId)
+                  : [...favorites, itemId]
+                
+                setFavorites(newFavorites)
+                
+                // Sauvegarder dans Firebase
+                try {
+                  await updateUserProfile(user.uid, { favorites: newFavorites })
+                } catch (error) {
+                  console.error('Erreur sauvegarde favoris:', error)
+                  // Revenir en arrière en cas d'erreur
+                  setFavorites(favorites)
+                }
+              }}
             />
           )
         ) : (
@@ -281,9 +386,13 @@ function App() {
           onClose={() => setShowCart(false)}
           onRemove={removeFromCart}
           onUpdateQuantity={updateQuantity}
-          onCheckout={() => {
+          onCheckout={(appliedPromo) => {
             setShowCart(false)
             setShowOrderForm(true)
+            // Stocker le code promo pour l'utiliser dans la commande
+            if (appliedPromo) {
+              sessionStorage.setItem('applied_promo', JSON.stringify(appliedPromo))
+            }
           }}
         />
       )}
@@ -293,6 +402,7 @@ function App() {
           onClose={() => setShowOrderForm(false)}
           onOrder={handleOrder}
           user={user}
+          userProfile={userProfile}
         />
       )}
       {showLogin && (
@@ -305,9 +415,34 @@ function App() {
       {showProfile && (
         <Profile
           user={user}
-          onClose={() => setShowProfile(false)}
+          onClose={async () => {
+            setShowProfile(false)
+            // Recharger le profil après modification
+            if (user) {
+              try {
+                const profile = await getUserProfile(user.uid)
+                if (profile) {
+                  setUserProfile(profile)
+                  setFavorites(profile.favorites || [])
+                }
+              } catch (error) {
+                console.error('Erreur rechargement profil:', error)
+              }
+            }
+          }}
         />
       )}
+      {/* Toast notifications */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
     </div>
   )
 }

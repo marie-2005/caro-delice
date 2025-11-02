@@ -1,7 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
+import PromoCode from './PromoCode'
+import { applyPromoCodeToTotal } from '../services/promoService'
 import './Cart.css'
 
 function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout }) {
+  const [appliedPromo, setAppliedPromo] = useState(null)
+  
+  // Calculer le total avec code promo
+  const finalTotal = appliedPromo ? appliedPromo.total : total
+  const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0
   return (
     <div className="cart-overlay" onClick={onClose}>
       <div className="cart" onClick={(e) => e.stopPropagation()}>
@@ -46,11 +53,22 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout }) 
                   </div>
                 ))}
               </div>
+              <PromoCode 
+                onApplyPromo={setAppliedPromo}
+                appliedPromo={appliedPromo}
+                total={total}
+              />
               <div className="cart-footer">
+                {discountAmount > 0 && (
+                  <div className="cart-discount">
+                    <span>Sous-total: {total.toLocaleString()} FCFA</span>
+                    <span className="discount-amount">-{discountAmount.toLocaleString()} FCFA ({appliedPromo.discount}%)</span>
+                  </div>
+                )}
                 <div className="cart-total">
-                  <strong>Total: {total.toLocaleString()} FCFA</strong>
+                  <strong>Total: {finalTotal.toLocaleString()} FCFA</strong>
                 </div>
-                <button className="checkout-button" onClick={onCheckout}>
+                <button className="checkout-button" onClick={() => onCheckout(appliedPromo)}>
                   Commander
                 </button>
               </div>

@@ -1,0 +1,196 @@
+.print-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1003;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.print-content {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+}
+
+.print-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.print-btn,
+.close-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.print-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.print-btn:hover {
+  background: var(--primary-hover);
+}
+
+.close-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.close-btn:hover {
+  background: var(--border-color);
+}
+
+.ticket {
+  background: white;
+  padding: 2rem;
+  border: 2px dashed #ccc;
+}
+
+.ticket-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #000;
+}
+
+.ticket-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ticket-header p {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.ticket-section {
+  margin-bottom: 1.5rem;
+}
+
+.ticket-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.25rem;
+}
+
+.ticket-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.ticket-details {
+  font-size: 0.875rem;
+}
+
+.ticket-details div {
+  margin-bottom: 0.5rem;
+}
+
+.ticket-items {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ticket-items th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #000;
+  font-weight: 700;
+}
+
+.ticket-items td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.ticket-items th:last-child,
+.ticket-items td:last-child {
+  text-align: right;
+}
+
+.ticket-total {
+  text-align: right;
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 1rem;
+  background: #f0f0f0;
+  border-radius: 0.25rem;
+}
+
+.ticket-notes {
+  font-size: 0.875rem;
+  padding: 0.75rem;
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+}
+
+.ticket-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 2px solid #000;
+}
+
+.ticket-footer p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+/* Styles pour l'impression */
+@media print {
+  .print-overlay {
+    background: white;
+    padding: 0;
+  }
+
+  .print-content {
+    max-width: 100%;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .print-actions {
+    display: none;
+  }
+
+  .ticket {
+    border: none;
+    padding: 1rem;
+  }
+
+  .ticket-header {
+    border-bottom: 3px solid #000;
+  }
+
+  .ticket-footer {
+    border-top: 3px solid #000;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
+
