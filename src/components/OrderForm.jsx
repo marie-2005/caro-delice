@@ -12,8 +12,9 @@ function OrderForm({ total, onClose, onOrder, user }) {
     notes: ''
   })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    
     if (!formData.name || !formData.phone || !formData.paymentMethod) {
       alert('Veuillez remplir le nom, le téléphone et choisir un mode de paiement')
       return
@@ -22,6 +23,9 @@ function OrderForm({ total, onClose, onOrder, user }) {
       alert('Veuillez indiquer votre numéro de chambre pour la livraison')
       return
     }
+
+    // Paiement manuel - la commande est créée et le client paie ensuite
+    // Le statut de paiement sera géré manuellement par l'administrateur
     onOrder(formData)
   }
 
@@ -118,8 +122,10 @@ function OrderForm({ total, onClose, onOrder, user }) {
             >
               <option value="">Sélectionnez un mode de paiement</option>
               <option value="wave">Wave</option>
-              <option value="tremo">Tremo</option>
+              <option value="mtn">MTN Mobile Money</option>
               <option value="orange-money">Orange Money</option>
+              <option value="tremo">Tremo</option>
+              <option value="especes">Espèces</option>
             </select>
           </div>
           <div className="form-group">
@@ -135,17 +141,24 @@ function OrderForm({ total, onClose, onOrder, user }) {
           </div>
           <div className="order-info">
             {formData.deliveryType === 'sur-place' ? (
-              <div className="info-item">
-                <strong>Lieu de retrait :</strong> Chambre C-75
-              </div>
+              <>
+                <div className="info-item">
+                  <strong>Lieu de retrait :</strong> Chambre C-75
+                </div>
+                <div className="info-item">
+                  <strong>Contact :</strong> 0759402520
+                </div>
+              </>
             ) : (
-              <div className="info-item">
-                <strong>Livraison à :</strong> Chambre {formData.roomNumber}
-              </div>
+              <>
+                <div className="info-item">
+                  <strong>Livraison à :</strong> Chambre {formData.roomNumber || '(à remplir)'}
+                </div>
+                <div className="info-item">
+                  <strong>Contact client :</strong> {formData.phone || '(à remplir)'}
+                </div>
+              </>
             )}
-            <div className="info-item">
-              <strong>Contact :</strong> 0759402520
-            </div>
           </div>
           <div className="order-total">
             <strong>Total: {total.toLocaleString()} FCFA</strong>

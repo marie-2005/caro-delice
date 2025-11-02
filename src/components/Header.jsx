@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import './Header.css'
 
 function Header({ 
@@ -10,8 +10,43 @@ function Header({
   onLogoutClick,
   currentView,
   onViewChange,
-  ordersCount
+  ordersCount,
+  onProfileClick
 }) {
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const menuRef = useRef(null)
+
+  // Fermer le menu quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
+
+  const handleUserClick = () => {
+    setShowUserMenu(!showUserMenu)
+  }
+
+  const handleProfileClick = () => {
+    setShowUserMenu(false)
+    onProfileClick()
+  }
+
+  const handleLogoutClick = () => {
+    setShowUserMenu(false)
+    onLogoutClick()
+  }
+
   return (
     <header className="header">
       <div className="header-container">
@@ -39,11 +74,35 @@ function Header({
           )}
           
           {user ? (
-            <div className="user-info">
-              <span className="user-name clickable" onClick={onLogoutClick} title="Cliquez pour vous déconnecter">
-                {user.email}
-              </span>
-              {isAdmin && <span className="admin-badge">Admin</span>}
+            <div className="user-info-container" ref={menuRef}>
+              <div className="user-info">
+                <span 
+                  className="user-name clickable" 
+                  onClick={handleUserClick} 
+                  title="Cliquez pour voir les options"
+                >
+                  {user.email}
+                </span>
+                {isAdmin && <span className="admin-badge">Admin</span>}
+              </div>
+              {showUserMenu && (
+                <div className="user-menu">
+                  <button 
+                    className="user-menu-item"
+                    onClick={handleProfileClick}
+                  >
+                    <span className="menu-icon">👤</span>
+                    Profil
+                  </button>
+                  <button 
+                    className="user-menu-item"
+                    onClick={handleLogoutClick}
+                  >
+                    <span className="menu-icon">🚪</span>
+                    Déconnexion
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button className="login-button" onClick={onLoginClick}>
