@@ -1,0 +1,105 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper pour vérifier si l'utilisateur est admin
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+    }
+
+    // Règles commandes
+    match /orders/{orderId} {
+      // Tout le monde peut créer
+      allow create: if true;
+
+      // Lecture
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.customerId == request.auth.uid ||
+        resource.data.customerEmail == request.auth.token.email ||
+        resource.data.customerId == null
+      );
+
+      // Mise à jour
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        (
+          (resource.data.customerId == request.auth.uid ||
+           resource.data.customerEmail == request.auth.token.email) &&
+          resource.data.status == 'en attente'
+        )
+      );
+
+      // Suppression : seulement admin
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Règles utilisateurs
+    match /users/{userId} {
+      // L'utilisateur lit son profil
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Admin lit tout
+      allow read: if request.auth != null && isAdmin();
+
+      // Utilisateur peut créer/mettre à jour son profil
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+
+      // Admin peut tout faire
+      allow read, write: if request.auth != null && isAdmin();
+    }
+
+    // Règles fidélité
+    match /loyalty/{userId} {
+      // Lecture user
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Lecture admin
+      allow read: if request.auth != null && isAdmin();
+
+      // Création user
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Mise à jour user
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Admin peut tout faire
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Historique fidélité
+    match /loyalty/{userId}/history/{historyId} {
+      // Lecture user
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Lecture admin
+      allow read: if request.auth != null && isAdmin();
+
+      // Création user
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Admin peut tout faire
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Règles pour l'utilisation des codes promo (codes à usage unique comme BIENVENUE10)
+    match /promoUsage/{usageId} {
+      // Lecture : utilisateur lit ses propres utilisations
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      // Création : utilisateur peut créer ses propres utilisations
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+
+      // Admin peut tout faire
+      allow read, write: if request.auth != null && isAdmin();
+    }
+  }
+}

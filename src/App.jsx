@@ -180,9 +180,16 @@ function App() {
     if (promoData) {
       try {
         const promo = JSON.parse(promoData)
+        // Vérifier que si c'est un code à usage unique (BIENVENUE10), l'utilisateur est connecté
+        if (promo.code === 'BIENVENUE10' && !user?.uid) {
+          // Nettoyer le code promo si l'utilisateur n'est pas connecté
+          sessionStorage.removeItem('applied_promo')
+          return subtotal
+        }
         return promo.total
       } catch (e) {
         console.error('Erreur lecture promo:', e)
+        sessionStorage.removeItem('applied_promo')
       }
     }
     
@@ -192,6 +199,44 @@ function App() {
   const handleOrder = async (orderInfo) => {
     const total = getTotalPrice()
     
+    // Récupérer le code promo appliqué si présent
+    let appliedPromo = null
+    const promoData = sessionStorage.getItem('applied_promo')
+    if (promoData) {
+      try {
+        appliedPromo = JSON.parse(promoData)
+        // Vérifier que si c'est BIENVENUE10, l'utilisateur est connecté
+        if (appliedPromo.code === 'BIENVENUE10' && !user?.uid) {
+          // Nettoyer le code promo et afficher une erreur
+          sessionStorage.removeItem('applied_promo')
+          alert('Ce code promo nécessite une connexion. Veuillez créer un compte ou vous connecter.')
+          return // Arrêter la création de commande
+        }
+      } catch (e) {
+        console.error('Erreur lecture promo:', e)
+        sessionStorage.removeItem('applied_promo')
+      }
+    }
+    
+    // Préparer les informations de livraison AVANT tout
+    const deliveryInfo = orderInfo.deliveryType === 'livraison' 
+      ? `Livraison: Chambre ${orderInfo.roomNumber}`
+      : 'Retrait: Chambre C-75'
+    
+    // AFFICHER LE MESSAGE IMMÉDIATEMENT (sans attendre la création de la commande)
+    // Fermer les formulaires immédiatement pour une meilleure UX
+    setCart([])
+    setShowCart(false)
+    setShowOrderForm(false)
+    
+    // Afficher l'alert IMMÉDIATEMENT (bloquant)
+    if (orderInfo.paymentMethod === 'wave' && orderInfo.paymentLink) {
+      alert(`Commande créée! Total: ${total.toLocaleString()} FCFA\n\nUn lien de paiement Wave a été ouvert dans un nouvel onglet.\n\n${deliveryInfo}\n\nVeuillez compléter le paiement pour valider votre commande.`)
+    } else {
+      alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod === 'wave' ? 'Wave' : orderInfo.paymentMethod === 'tremo' ? 'Tremo' : orderInfo.paymentMethod === 'orange-money' ? 'Orange Money' : 'Espèces'}\n${deliveryInfo}\n\nNous préparons votre commande. Merci!`)
+    }
+    
+    // CRÉER LA COMMANDE EN ARRIÈRE-PLAN (après avoir affiché le message)
     try {
       const orderData = {
         items: [...cart],
@@ -212,6 +257,7 @@ function App() {
           : 'en attente',
         paymentStatus: orderInfo.paymentStatus || null,
         paymentLink: orderInfo.paymentLink || null,
+        appliedPromo: appliedPromo || null, // Inclure les infos de promo pour l'impression
         createdAt: new Date().toISOString()
       }
 
@@ -227,30 +273,46 @@ function App() {
         console.warn('Erreur gestion stock:', stockError)
       }
 
-      const orderId = await createOrder(orderData)
+      // Créer la commande en arrière-plan
+      const order = await createOrder(orderData)
       
-      const deliveryInfo = orderInfo.deliveryType === 'livraison' 
-        ? `Livraison: Chambre ${orderInfo.roomNumber}`
-        : 'Retrait: Chambre C-75'
-      
-      if (orderInfo.paymentMethod === 'wave' && orderInfo.paymentLink) {
-        alert(`Commande créée! Total: ${total.toLocaleString()} FCFA\n\nUn lien de paiement Wave a été ouvert dans un nouvel onglet.\n\n${deliveryInfo}\n\nVeuillez compléter le paiement pour valider votre commande.`)
-      } else {
-        alert(`Commande reçue! Total: ${total.toLocaleString()} FCFA\n\nMode de paiement: ${orderInfo.paymentMethod === 'wave' ? 'Wave' : orderInfo.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}\n${deliveryInfo}\n\nNous préparons votre commande. Merci!`)
+      // Enregistrer l'utilisation du code promo si présent (pour codes à usage unique)
+      if (appliedPromo && appliedPromo.code && user?.uid) {
+        try {
+          const { recordPromoCodeUsage } = await import('./services/promoService')
+          await recordPromoCodeUsage(user.uid, appliedPromo.code, order.id)
+        } catch (promoError) {
+          console.warn('Erreur enregistrement usage code promo:', promoError)
+          // Ne pas bloquer si l'enregistrement échoue
+        }
       }
       
-      setCart([])
-      setShowCart(false)
-      setShowOrderForm(false)
+      // Nettoyer le code promo du sessionStorage après création de la commande
+      sessionStorage.removeItem('applied_promo')
+      
+      // IMPRESSION : S'exécute après la création de la commande
+      try {
+        const { printOrderTicket } = await import('./services/printService')
+        printOrderTicket(order)
+      } catch (error) {
+        console.error('Erreur impression après confirmation:', error)
+      }
     } catch (error) {
       console.error('Erreur lors de la création de la commande:', error)
       alert('Erreur lors de la création de la commande. Veuillez réessayer.')
     }
   }
 
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+  const handleUpdateOrderStatus = async (orderId, newStatus, oldStatus = null) => {
     try {
-      await updateOrderStatus(orderId, newStatus)
+      // Récupérer l'ancien statut si non fourni
+      if (!oldStatus) {
+        const order = orders.find(o => o.id === orderId)
+        if (order) {
+          oldStatus = order.status
+        }
+      }
+      await updateOrderStatus(orderId, newStatus, oldStatus)
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error)
       alert('Erreur lors de la mise à jour du statut.')
@@ -394,6 +456,7 @@ function App() {
               sessionStorage.setItem('applied_promo', JSON.stringify(appliedPromo))
             }
           }}
+          user={user}
         />
       )}
       {showOrderForm && (

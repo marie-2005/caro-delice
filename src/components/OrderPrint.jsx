@@ -1,130 +1,102 @@
 import React from 'react'
+import { printOrderTicket, printKitchenTicket, printDeliveryTicket } from '../services/printService'
 import './OrderPrint.css'
 
 function OrderPrint({ order, onClose }) {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Date inconnue'
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return 'Date invalide'
-    return date.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  if (!order) return null
 
-  const handlePrint = () => {
-    window.print()
+  const handlePrint = (type) => {
+    let success = false
+    
+    switch (type) {
+      case 'order':
+        success = printOrderTicket(order)
+        break
+      case 'kitchen':
+        success = printKitchenTicket(order)
+        break
+      case 'delivery':
+        success = printDeliveryTicket(order)
+        break
+      default:
+        break
+    }
+    
+    if (!success) {
+      alert('❌ Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les pop-ups ne sont pas bloquées.')
+    }
   }
 
   return (
-    <div className="print-overlay">
-      <div className="print-content">
-        <div className="print-actions">
-          <button onClick={handlePrint} className="print-btn">
-            🖨️ Imprimer
-          </button>
-          <button onClick={onClose} className="close-btn">
-            ✕ Fermer
-          </button>
+    <div className="print-overlay" onClick={onClose}>
+      <div className="print-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="print-header">
+          <h2>🖨️ Imprimer Ticket</h2>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="print-content">
+          <div className="print-order-info">
+            <p><strong>Commande:</strong> #{order.id.toString().slice(-6)}</p>
+            <p><strong>Client:</strong> {order.customerName || order.name}</p>
+            <p><strong>Date:</strong> {new Date(order.createdAt || order.date).toLocaleString('fr-FR')}</p>
+          </div>
+
+          <div className="print-options">
+            <div className="print-option-card">
+              <div className="print-option-icon">💰</div>
+              <div className="print-option-content">
+                <h3>Ticket de Commande</h3>
+                <p>Ticket pour la caisse</p>
+              </div>
+              <button 
+                className="print-option-button"
+                onClick={() => handlePrint('order')}
+              >
+                Imprimer
+              </button>
+            </div>
+
+            <div className="print-option-card">
+              <div className="print-option-icon">👨‍🍳</div>
+              <div className="print-option-content">
+                <h3>Ticket Cuisine</h3>
+                <p>Ticket de préparation</p>
+              </div>
+              <button 
+                className="print-option-button"
+                onClick={() => handlePrint('kitchen')}
+              >
+                Imprimer
+              </button>
+            </div>
+
+            {order.deliveryType === 'livraison' && (
+              <div className="print-option-card">
+                <div className="print-option-icon">🚚</div>
+                <div className="print-option-content">
+                  <h3>Ticket Livraison</h3>
+                  <p>Pour le livreur</p>
+                </div>
+                <button 
+                  className="print-option-button"
+                  onClick={() => handlePrint('delivery')}
+                >
+                  Imprimer
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="print-tips">
+            <p><strong>💡 Astuce:</strong> Assurez-vous que votre imprimante thermique est configurée sur 80mm de largeur.</p>
+          </div>
         </div>
 
-        <div className="ticket" id="order-ticket">
-          <div className="ticket-header">
-            <h1>LES DÉLICES DE CARO</h1>
-            <p>Ouvert uniquement les samedis</p>
-          </div>
-
-          <div className="ticket-section">
-            <div className="ticket-info">
-              <div><strong>Ticket #</strong>{order.id.toString().slice(-6)}</div>
-              <div><strong>Date:</strong> {formatDate(order.createdAt || order.date)}</div>
-            </div>
-          </div>
-
-          <div className="ticket-section">
-            <h3>Client</h3>
-            <div className="ticket-details">
-              <div><strong>Nom:</strong> {order.customerName || order.name}</div>
-              <div><strong>Téléphone:</strong> {order.customerPhone || order.phone}</div>
-              {order.customerEmail && <div><strong>Email:</strong> {order.customerEmail}</div>}
-            </div>
-          </div>
-
-          <div className="ticket-section">
-            <h3>Livraison</h3>
-            <div className="ticket-details">
-              <div><strong>Type:</strong> {order.deliveryType === 'livraison' ? 'Livraison' : 'Sur place'}</div>
-              {order.roomNumber && <div><strong>Chambre:</strong> {order.roomNumber}</div>}
-              {order.deliveryType === 'sur-place' && <div><strong>Retrait:</strong> Chambre C-75</div>}
-            </div>
-          </div>
-
-          <div className="ticket-section">
-            <h3>Articles</h3>
-            <table className="ticket-items">
-              <thead>
-                <tr>
-                  <th>Article</th>
-                  <th>Qté</th>
-                  <th>Prix</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.name}</td>
-                    <td>{item.quantity}</td>
-                    <td>{item.price.toLocaleString()} FCFA</td>
-                    <td>{(item.price * item.quantity).toLocaleString()} FCFA</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="ticket-section">
-            <div className="ticket-total">
-              <strong>TOTAL: {order.total.toLocaleString()} FCFA</strong>
-            </div>
-          </div>
-
-          <div className="ticket-section">
-            <div className="ticket-details">
-              <div><strong>Paiement:</strong> {
-                order.paymentMethod === 'wave' ? 'Wave' :
-                order.paymentMethod === 'mtn' ? 'MTN Mobile Money' :
-                order.paymentMethod === 'orange-money' ? 'Orange Money' :
-                order.paymentMethod === 'tremo' ? 'Tremo' :
-                order.paymentMethod === 'especes' ? 'Espèces' :
-                order.paymentMethod
-              }</div>
-              <div><strong>Statut:</strong> {
-                order.status === 'en attente' ? 'En attente' :
-                order.status === 'en préparation' ? 'En préparation' :
-                order.status === 'prête' ? 'Prête' :
-                order.status === 'livrée' ? 'Livrée' :
-                order.status === 'annulée' ? 'Annulée' :
-                order.status
-              }</div>
-            </div>
-          </div>
-
-          {order.notes && (
-            <div className="ticket-section">
-              <div className="ticket-notes">
-                <strong>Notes:</strong> {order.notes}
-              </div>
-            </div>
-          )}
-
-          <div className="ticket-footer">
-            <p>Merci pour votre commande !</p>
-            <p>Bon appétit ! 🍴</p>
-          </div>
+        <div className="print-footer">
+          <button className="cancel-button" onClick={onClose}>
+            Fermer
+          </button>
         </div>
       </div>
     </div>
@@ -132,4 +104,3 @@ function OrderPrint({ order, onClose }) {
 }
 
 export default OrderPrint
-

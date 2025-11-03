@@ -31,11 +31,11 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Vérifier si ouvert
-    if (!isOpen) {
-      alert(`❌ Nous sommes fermés actuellement.\n\n${businessStatus.message}\n\nMerci de réessayer pendant nos heures d'ouverture.`)
-      return
-    }
+    // Vérifier si ouvert - DÉSACTIVÉ TEMPORAIREMENT POUR TEST
+    // if (!isOpen) {
+    //   alert(`❌ Nous sommes fermés actuellement.\n\n${businessStatus.message}\n\nMerci de réessayer pendant nos heures d'ouverture.`)
+    //   return
+    // }
     
     if (!formData.name || !formData.phone || !formData.paymentMethod) {
       alert('Veuillez remplir le nom, le téléphone et choisir un mode de paiement')
@@ -65,12 +65,13 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
           <h2>Finaliser votre commande</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
-        {!isOpen && (
+        {/* Alerte fermeture - DÉSACTIVÉ TEMPORAIREMENT POUR TEST */}
+        {/* {!isOpen && (
           <div className="closed-alert">
             <p>🔴 <strong>Fermé actuellement</strong></p>
             <p className="closed-message">{businessStatus.message}</p>
           </div>
-        )}
+        )} */}
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
             <label htmlFor="name">Nom *</label>
@@ -150,7 +151,6 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
             >
               <option value="">Sélectionnez un mode de paiement</option>
               <option value="wave">Wave</option>
-              <option value="mtn">MTN Mobile Money</option>
               <option value="orange-money">Orange Money</option>
               <option value="tremo">Tremo</option>
               <option value="especes">Espèces</option>
@@ -229,10 +229,11 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
             <button 
               type="submit" 
               className="submit-button"
-              disabled={!isOpen}
-              style={!isOpen ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              // disabled={!isOpen} // DÉSACTIVÉ TEMPORAIREMENT POUR TEST
+              // style={!isOpen ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              {isOpen ? 'Confirmer la commande' : 'Fermé - Commande impossible'}
+              Confirmer la commande
+              {/* {isOpen ? 'Confirmer la commande' : 'Fermé - Commande impossible'} */}
             </button>
           </div>
         </form>

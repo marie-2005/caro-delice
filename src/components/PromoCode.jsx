@@ -1,11 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { validatePromoCode } from '../services/promoService'
 import './PromoCode.css'
 
-function PromoCode({ onApplyPromo, appliedPromo, total }) {
+function PromoCode({ onApplyPromo, appliedPromo, total, userId = null }) {
   const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [applying, setApplying] = useState(false)
+
+  // Nettoyer le code promo appliqué si l'utilisateur n'est plus connecté et que c'est un code à usage unique
+  useEffect(() => {
+    if (appliedPromo && appliedPromo.code === 'BIENVENUE10' && !userId) {
+      // Si le code BIENVENUE10 est appliqué mais l'utilisateur n'est pas connecté, le retirer
+      onApplyPromo(null)
+      setError('Ce code promo nécessite une connexion. Veuillez créer un compte ou vous connecter.')
+    }
+  }, [userId, appliedPromo, onApplyPromo])
 
   const handleApply = async () => {
     if (!promoCode.trim()) {
@@ -16,7 +25,11 @@ function PromoCode({ onApplyPromo, appliedPromo, total }) {
     setApplying(true)
     setError('')
 
-    const validation = validatePromoCode(promoCode.trim())
+    // Debug: vérifier si userId est passé
+    console.log('PromoCode - userId reçu:', userId, 'Code:', promoCode.trim())
+
+    // Valider le code promo avec l'userId (vérifie si déjà utilisé pour codes à usage unique)
+    const validation = await validatePromoCode(promoCode.trim(), userId)
     
     if (!validation.valid) {
       setError(validation.error)

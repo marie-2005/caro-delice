@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { getRemainingTime, getPreparationTime } from '../services/orderStatusService'
 import OrderRating from './OrderRating'
 import DeliveryTracking from './DeliveryTracking'
+import OrderPrint from './OrderPrint'
 import { getOrderRating } from '../services/ratingService'
 import './OrdersList.css'
 
@@ -311,7 +312,7 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
         {order.deliveryType === 'sur-place' && (
           <div><strong>Retrait:</strong> Chambre C-75</div>
         )}
-        <div><strong>Paiement:</strong> {order.paymentMethod === 'wave' ? 'Wave' : order.paymentMethod === 'tremo' ? 'Tremo' : 'Orange Money'}</div>
+        <div><strong>Paiement:</strong> {order.paymentMethod === 'wave' ? 'Wave' : order.paymentMethod === 'tremo' ? 'Tremo' : order.paymentMethod === 'orange-money' ? 'Orange Money' : 'Espèces'}</div>
       </div>
 
       <div className="order-items">

@@ -24,6 +24,7 @@
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .profile-header {
@@ -209,6 +210,231 @@
   cursor: not-allowed;
 }
 
+/* Section Points Fidélité */
+.loyalty-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: visible;
+  background: var(--bg-secondary);
+}
+
+.loyalty-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.loyalty-header:hover {
+  background: var(--bg-primary);
+}
+
+.loyalty-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.loyalty-icon {
+  font-size: 2rem;
+}
+
+.loyalty-info h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.loyalty-points {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.loyalty-badge-container {
+  margin-right: 1rem;
+}
+
+.loyalty-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.loyalty-badge.bronze {
+  background: #cd7f32;
+  color: white;
+}
+
+.loyalty-badge.argent {
+  background: #c0c0c0;
+  color: #333;
+}
+
+.loyalty-badge.or {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #333;
+}
+
+.badge-icon {
+  font-size: 1.25rem;
+}
+
+.badge-name {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.loyalty-toggle {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.loyalty-details {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  margin-top: 1rem;
+}
+
+.loyalty-stat-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.loyalty-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.loyalty-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.loyalty-info-box {
+  padding: 1rem;
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.loyalty-info-box p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.loyalty-info-box ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.loyalty-info-box li {
+  margin-bottom: 0.25rem;
+}
+
+.points-history {
+  margin-top: 1rem;
+}
+
+.points-history h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.history-type {
+  font-size: 1.25rem;
+}
+
+.history-type.earned {
+  color: #10b981;
+}
+
+.history-type.used {
+  color: #ef4444;
+}
+
+.history-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.history-details strong {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.history-details small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.history-amount {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .profile {
     max-width: 100%;
@@ -232,6 +458,19 @@
   .cancel-button,
   .save-button {
     width: 100%;
+  }
+
+  .loyalty-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .loyalty-header {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .loyalty-details {
+    padding: 1rem;
   }
 }
 

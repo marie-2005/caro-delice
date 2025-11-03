@@ -3,7 +3,7 @@ import PromoCode from './PromoCode'
 import { applyPromoCodeToTotal } from '../services/promoService'
 import './Cart.css'
 
-function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout }) {
+function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, user = null }) {
   const [appliedPromo, setAppliedPromo] = useState(null)
   
   // Calculer le total avec code promo
@@ -57,6 +57,7 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout }) 
                 onApplyPromo={setAppliedPromo}
                 appliedPromo={appliedPromo}
                 total={total}
+                userId={user?.uid || null}
               />
               <div className="cart-footer">
                 {discountAmount > 0 && (

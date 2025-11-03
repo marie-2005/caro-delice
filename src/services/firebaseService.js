@@ -58,8 +58,37 @@ export const createOrder = async (orderData) => {
       // Ignorer les erreurs de SMS pour ne pas bloquer la création
       console.warn('SMS confirmation client non envoyé:', smsError)
     }
+
+    // Attribuer des points fidélité (ne bloque pas si ça échoue)
+    if (orderData.customerId) {
+      try {
+        const { addPointsFromOrder } = await import('./loyaltyService')
+        await addPointsFromOrder(orderData.customerId, orderData.total, docRef.id)
+      } catch (loyaltyError) {
+        console.warn('Points fidélité non attribués:', loyaltyError)
+      }
+    }
+
+    // Impression automatique DÉSACTIVÉE - sera déclenchée après la confirmation dans App.jsx
+    // L'impression se fait maintenant APRÈS que l'utilisateur ait cliqué sur OK de l'alert
+    // try {
+    //   const { autoPrintOnOrderCreate } = await import('./printService')
+    //   await autoPrintOnOrderCreate({
+    //     ...orderData,
+    //     id: docRef.id
+    //   })
+    // } catch (printError) {
+    //   console.warn('Impression automatique non effectuée:', printError)
+    // }
     
-    return docRef.id
+    // Retourner l'ID et les données de la commande pour éviter de devoir la relire depuis Firebase
+    // (permet d'éviter les problèmes de permissions pour les utilisateurs non authentifiés)
+    return {
+      id: docRef.id,
+      ...orderData,
+      createdAt: orderData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
   } catch (error) {
     console.error('Erreur lors de la création de la commande:', error)
     throw error
@@ -123,13 +152,37 @@ export const getCustomerOrders = (customerId, callback) => {
 }
 
 // Mettre à jour le statut d'une commande
-export const updateOrderStatus = async (orderId, newStatus) => {
+export const updateOrderStatus = async (orderId, newStatus, oldStatus = null) => {
   try {
     const orderRef = doc(db, 'orders', orderId)
+    
+    // Récupérer l'ancien statut si non fourni
+    if (!oldStatus) {
+      const orderSnap = await getDoc(orderRef)
+      if (orderSnap.exists()) {
+        oldStatus = orderSnap.data().status
+      }
+    }
+    
     await updateDoc(orderRef, {
       status: newStatus,
       updatedAt: new Date().toISOString()
     })
+
+    // Impression automatique lors du changement de statut (ne bloque pas si ça échoue)
+    try {
+      const orderSnap = await getDoc(orderRef)
+      if (orderSnap.exists()) {
+        const { autoPrintOnStatusChange } = await import('./printService')
+        autoPrintOnStatusChange(
+          { id: orderId, ...orderSnap.data() },
+          oldStatus,
+          newStatus
+        )
+      }
+    } catch (printError) {
+      console.warn('Impression automatique lors changement statut non effectuée:', printError)
+    }
   } catch (error) {
     console.error('Erreur lors de la mise à jour:', error)
     throw error
