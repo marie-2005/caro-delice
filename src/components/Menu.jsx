@@ -195,15 +195,17 @@ function Menu({ cart, addToCart, updateQuantity, user, favorites, onToggleFavori
       
       {/* Filtres de catégories */}
       <div className="category-filters">
-        {categories.map(category => (
-          <button
-            key={category}
-            className={`category-filter-btn ${selectedCategory === category ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category === 'toutes' ? '✨ Toutes' : category}
-          </button>
-        ))}
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="category-select"
+        >
+          {categories.map(category => (
+            <option key={category} value={category}>
+              {category === 'toutes' ? '✨ Toutes' : category}
+            </option>
+          ))}
+        </select>
       </div>
       
       {/* Section Favoris si avec des favoris (connecté ou non) */}
@@ -299,7 +301,6 @@ function Menu({ cart, addToCart, updateQuantity, user, favorites, onToggleFavori
         </div>
       )}
 
-      <h2 className="menu-title">Articles</h2>
       <div className="menu-grid">
         {filteredItems.map((item) => {
           const quantity = getItemQuantity(item.id)

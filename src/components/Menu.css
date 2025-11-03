@@ -20,7 +20,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.category-filter-btn {
+.category-select {
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
@@ -30,17 +30,18 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 150px;
+  outline: none;
 }
 
-.category-filter-btn:hover {
+.category-select:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
 }
 
-.category-filter-btn.active {
-  background: var(--primary-color);
-  color: white;
+.category-select:focus {
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
 .no-items-message {

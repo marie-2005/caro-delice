@@ -51,8 +51,15 @@ function Header({
     <header className="header">
       <div className="header-container">
         <div className="logo">
-          <h1>Les Délices de Caro</h1>
-          <p>Ouvert uniquement les samedis</p>
+          <img 
+            src="/images/logo-carodelice.jpg" 
+            alt="Logo Les Délices de Caro" 
+            className="logo-image"
+          />
+          <div className="logo-text">
+            <h1>Les Délices de Caro</h1>
+            <p>Ouvert uniquement les samedis</p>
+          </div>
         </div>
         <div className="header-actions">
           {user && (

@@ -6,9 +6,24 @@ import './Cart.css'
 function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, user = null }) {
   const [appliedPromo, setAppliedPromo] = useState(null)
   
+  // Vérifier si c'est samedi
+  const today = new Date()
+  const dayOfWeek = today.getDay()
+  const isSaturday = dayOfWeek === 6
+  
   // Calculer le total avec code promo
   const finalTotal = appliedPromo ? appliedPromo.total : total
   const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0
+  
+  const handleCheckout = () => {
+    if (!isSaturday) {
+      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+      const currentDay = days[dayOfWeek]
+      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+      return
+    }
+    onCheckout(appliedPromo)
+  }
   return (
     <div className="cart-overlay" onClick={onClose}>
       <div className="cart" onClick={(e) => e.stopPropagation()}>
@@ -69,8 +84,26 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                 <div className="cart-total">
                   <strong>Total: {finalTotal.toLocaleString()} FCFA</strong>
                 </div>
-                <button className="checkout-button" onClick={() => onCheckout(appliedPromo)}>
-                  Commander
+                {!isSaturday && (
+                  <div style={{ 
+                    backgroundColor: '#fee2e2', 
+                    border: '1px solid #ef4444', 
+                    borderRadius: '0.5rem', 
+                    padding: '0.75rem', 
+                    marginBottom: '0.75rem',
+                    textAlign: 'center',
+                    fontSize: '0.875rem'
+                  }}>
+                    <strong style={{ color: '#dc2626' }}>🔴 Commandes disponibles uniquement le samedi</strong>
+                  </div>
+                )}
+                <button 
+                  className="checkout-button" 
+                  onClick={handleCheckout}
+                  disabled={!isSaturday}
+                  style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                >
+                  {isSaturday ? 'Commander' : 'Commandes disponibles uniquement le samedi'}
                 </button>
               </div>
             </>
