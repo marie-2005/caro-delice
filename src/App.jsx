@@ -198,15 +198,16 @@ function App() {
 
   const handleOrder = async (orderInfo) => {
     // Vérifier si c'est samedi (jour 6, où 0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    
-    if (dayOfWeek !== 6) {
-      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
-      const currentDay = days[dayOfWeek]
-      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
-      return
-    }
+    // DÉSACTIVÉ TEMPORAIREMENT
+    // const today = new Date()
+    // const dayOfWeek = today.getDay()
+    // 
+    // if (dayOfWeek !== 6) {
+    //   const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+    //   const currentDay = days[dayOfWeek]
+    //   alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+    //   return
+    // }
     
     const total = getTotalPrice()
     

@@ -15,10 +15,10 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const [isOpen, setIsOpen] = useState(isCurrentlyOpen())
   const [businessStatus, setBusinessStatus] = useState(getBusinessStatus())
   
-  // Vérifier si c'est samedi
-  const today = new Date()
-  const dayOfWeek = today.getDay()
-  const isSaturday = dayOfWeek === 6
+  // Vérifier si c'est samedi - DÉSACTIVÉ TEMPORAIREMENT
+  // const today = new Date()
+  // const dayOfWeek = today.getDay()
+  const isSaturday = true // Toujours activé temporairement
 
   // Vérifier les horaires toutes les minutes
   useEffect(() => {
@@ -37,15 +37,16 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
     e.preventDefault()
     
     // Vérifier si c'est samedi (jour 6, où 0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    
-    if (dayOfWeek !== 6) {
-      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
-      const currentDay = days[dayOfWeek]
-      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
-      return
-    }
+    // DÉSACTIVÉ TEMPORAIREMENT
+    // const today = new Date()
+    // const dayOfWeek = today.getDay()
+    // 
+    // if (dayOfWeek !== 6) {
+    //   const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+    //   const currentDay = days[dayOfWeek]
+    //   alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+    //   return
+    // }
     
     if (!formData.name || !formData.phone || !formData.paymentMethod) {
       alert('Veuillez remplir le nom, le téléphone et choisir un mode de paiement')
@@ -82,7 +83,8 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
             <p className="closed-message">{businessStatus.message}</p>
           </div>
         )} */}
-        {!isSaturday && (
+        {/* DÉSACTIVÉ TEMPORAIREMENT */}
+        {/* {!isSaturday && (
           <div className="closed-alert" style={{ 
             backgroundColor: '#fee2e2', 
             border: '2px solid #ef4444', 
@@ -98,7 +100,7 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
               Aujourd'hui, nous sommes {['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][dayOfWeek]}.
             </p>
           </div>
-        )}
+        )} */}
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
             <label htmlFor="name">Nom *</label>
@@ -256,10 +258,11 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
             <button 
               type="submit" 
               className="submit-button"
-              disabled={!isSaturday}
-              style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              // disabled={!isSaturday} // DÉSACTIVÉ TEMPORAIREMENT
+              // style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              {isSaturday ? 'Confirmer la commande' : 'Commandes disponibles uniquement le samedi'}
+              Confirmer la commande
+              {/* {isSaturday ? 'Confirmer la commande' : 'Commandes disponibles uniquement le samedi'} */}
             </button>
           </div>
         </form>
