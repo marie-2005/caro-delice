@@ -129,51 +129,26 @@ function Profile({ user, onClose }) {
         </div>
 
         {/* Section Points Fidélité - TOUJOURS VISIBLE */}
-        <div style={{ 
-          padding: '1.5rem', 
-          margin: '1rem 1.5rem 2rem 1.5rem',
-          backgroundColor: '#fef3c7', 
-          border: '3px solid #f59e0b', 
-          borderRadius: '0.75rem',
-          minHeight: '100px'
-        }}>
+        <div className="loyalty-card-wrapper">
           <div 
             onClick={() => setShowLoyalty(!showLoyalty)} 
-            style={{ 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              width: '100%',
-              minHeight: '60px'
-            }}
+            className="loyalty-card-header"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-              <span style={{ fontSize: '2.5rem', display: 'inline-block' }}>🎁</span>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, color: '#92400e', fontSize: '1.5rem', fontWeight: '700', lineHeight: '1.2' }}>
+            <div className="loyalty-card-left">
+              <span className="loyalty-card-icon">🎁</span>
+              <div className="loyalty-card-text">
+                <h3 className="loyalty-card-title">
                   Points Fidélité
                 </h3>
-                <p style={{ margin: '0.5rem 0 0 0', color: '#78350f', fontSize: '1.125rem', fontWeight: '600' }}>
+                <p className="loyalty-card-points">
                   {loyaltyProfile ? (loyaltyProfile.availablePoints || 0) : 0} points disponibles
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem', 
-                padding: '0.5rem 1rem', 
-                borderRadius: '0.5rem',
-                backgroundColor: '#cd7f32',
-                color: 'white',
-                fontWeight: '700',
-                fontSize: '0.875rem',
-                whiteSpace: 'nowrap'
-              }}>
-                <span style={{ fontSize: '1.25rem', display: 'inline-block' }}>🥉</span>
-                <span style={{ textTransform: 'uppercase' }}>BRONZE</span>
+            <div className="loyalty-card-right">
+              <div className="loyalty-badge-mobile">
+                <span className="loyalty-badge-icon">🥉</span>
+                <span className="loyalty-badge-text">BRONZE</span>
               </div>
               <button 
                 type="button" 
@@ -181,14 +156,7 @@ function Profile({ user, onClose }) {
                   e.stopPropagation()
                   setShowLoyalty(!showLoyalty)
                 }}
-                style={{ 
-                  fontSize: '1.5rem', 
-                  background: 'none', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  padding: '0.25rem 0.5rem',
-                  color: '#92400e'
-                }}
+                className="loyalty-toggle-btn"
               >
                 {showLoyalty ? '▼' : '▶'}
               </button>
@@ -198,19 +166,8 @@ function Profile({ user, onClose }) {
         
         {/* Contenu déplié - EN DEHORS du conteneur jaune */}
         {showLoyalty && (
-          <div style={{ 
-            padding: '1rem', 
-            margin: '0 1.5rem 2rem 1.5rem',
-            backgroundColor: 'white', 
-            borderRadius: '0.5rem', 
-            border: '1px solid #d1d5db'
-          }}>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(2, 1fr)', 
-                gap: '1.25rem', 
-                marginBottom: '2rem'
-              }}>
+          <div className="loyalty-expanded-content">
+              <div className="loyalty-stats-grid">
                 {/* Points disponibles */}
                 <div className="loyalty-stat-card" style={{ 
                   padding: '1.5rem', 
@@ -349,31 +306,31 @@ function Profile({ user, onClose }) {
               </div>
               
               <div style={{ 
-                padding: '1.5rem', 
+                padding: '1rem', 
                 background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
                 border: '2px solid #f59e0b',
-                borderRadius: '1rem', 
-                marginBottom: '2rem',
+                borderRadius: '0.75rem', 
+                marginBottom: '1.5rem',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <span style={{ fontSize: '2rem' }}>💡</span>
-                  <p style={{ margin: 0, fontWeight: '800', color: '#92400e', fontSize: '1.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>💡</span>
+                  <p style={{ margin: 0, fontWeight: '700', color: '#92400e', fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Comment ça marche ?
                   </p>
                 </div>
                 <ul style={{ 
                   margin: 0, 
-                  paddingLeft: '1.75rem', 
+                  paddingLeft: '1.25rem', 
                   color: '#78350f', 
-                  fontSize: '1rem',
-                  lineHeight: '1.75'
+                  fontSize: '0.875rem',
+                  lineHeight: '1.5'
                 }}>
-                  <li style={{ marginBottom: '0.75rem', fontWeight: '500' }}>
-                    <strong style={{ color: '#92400e', fontWeight: '700' }}>1 point</strong> pour chaque <strong style={{ color: '#92400e', fontWeight: '700' }}>50 FCFA</strong> dépensés
+                  <li style={{ marginBottom: '0.5rem', fontWeight: '500' }}>
+                    <strong style={{ color: '#92400e', fontWeight: '700' }}>1 point</strong> pour chaque <strong style={{ color: '#92400e', fontWeight: '700' }}>100 FCFA</strong> dépensés
                   </li>
-                  <li style={{ marginBottom: '0.75rem', fontWeight: '500' }}>
-                    <strong style={{ color: '#92400e', fontWeight: '700' }}>100 points = 10% de réduction</strong> sur votre commande
+                  <li style={{ marginBottom: '0.5rem', fontWeight: '500' }}>
+                    <strong style={{ color: '#92400e', fontWeight: '700' }}>100 points = 15% de réduction</strong> sur votre commande
                   </li>
                   <li style={{ fontWeight: '500' }}>
                     Utilisez vos points lors de votre prochaine commande
@@ -381,87 +338,6 @@ function Profile({ user, onClose }) {
                 </ul>
               </div>
 
-              {pointsHistory.length > 0 && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <h4 style={{ 
-                    margin: '0 0 1.5rem 0', 
-                    fontSize: '1.125rem', 
-                    fontWeight: '700', 
-                    color: '#1f2937',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <span style={{ fontSize: '1.5rem' }}>📊</span>
-                    Historique récent
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {pointsHistory.map((entry) => (
-                      <div key={entry.id} style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '1rem', 
-                        padding: '1.25rem', 
-                        background: entry.type === 'earned' 
-                          ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
-                          : 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-                        borderRadius: '0.75rem', 
-                        border: `2px solid ${entry.type === 'earned' ? '#10b981' : '#ef4444'}`,
-                        boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                      }}>
-                        <div style={{
-                          width: '3rem',
-                          height: '3rem',
-                          borderRadius: '50%',
-                          background: entry.type === 'earned' 
-                            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                            : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.5rem',
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                        }}>
-                          {entry.type === 'earned' ? '➕' : '➖'}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ 
-                            fontWeight: '700', 
-                            color: entry.type === 'earned' ? '#065f46' : '#991b1b', 
-                            fontSize: '1rem', 
-                            marginBottom: '0.25rem' 
-                          }}>
-                            {entry.type === 'earned' 
-                              ? `+${entry.points} points gagnés`
-                              : `-${entry.points} points utilisés`}
-                          </div>
-                          <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                            {new Date(entry.date || entry.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </div>
-                        </div>
-                        {entry.orderAmount && (
-                          <div style={{ 
-                            padding: '0.5rem 1rem',
-                            background: 'white',
-                            borderRadius: '0.5rem',
-                            color: '#1f2937', 
-                            fontSize: '0.9375rem', 
-                            fontWeight: '700',
-                            border: '1px solid #e5e7eb'
-                          }}>
-                            {entry.orderAmount.toLocaleString()} FCFA
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
           </div>
         )}
         

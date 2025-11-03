@@ -3,15 +3,15 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, addDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
-const POINTS_PER_50FCFA = 1 // 1 point pour 50 FCFA dépensés
-const POINTS_FOR_DISCOUNT = 100 // 100 points = 10% de réduction
-const DISCOUNT_PERCENTAGE = 10 // Pourcentage de réduction (10%)
+const POINTS_PER_100FCFA = 1 // 1 point pour 100 FCFA dépensés
+const POINTS_FOR_DISCOUNT = 100 // 100 points = 15% de réduction
+const DISCOUNT_PERCENTAGE = 15 // Pourcentage de réduction (15%)
 
 /**
  * Calculer les points gagnés selon le montant dépensé
  */
 export const calculatePointsEarned = (amount) => {
-  return Math.floor(amount / 50) // 1 point pour chaque 50 FCFA
+  return Math.floor(amount / 100) // 1 point pour chaque 100 FCFA
 }
 
 /**
@@ -115,7 +115,7 @@ export const addPointsFromOrder = async (userId, orderAmount, orderId) => {
 
 /**
  * Utiliser des points pour payer une commande
- * 100 points = 10% de réduction sur le total
+ * 100 points = 15% de réduction sur le total
  */
 export const usePointsForOrder = async (userId, pointsToUse, orderAmount, orderId) => {
   try {
@@ -129,7 +129,7 @@ export const usePointsForOrder = async (userId, pointsToUse, orderAmount, orderI
       }
     }
 
-    // Utiliser exactement 100 points pour obtenir 10% de réduction
+    // Utiliser exactement 100 points pour obtenir 15% de réduction
     const pointsToDeduct = POINTS_FOR_DISCOUNT
     if (profile.availablePoints < pointsToDeduct) {
       return {
@@ -268,7 +268,7 @@ export const getAvailablePoints = async (userId) => {
  * Retourne le pourcentage de réduction si l'utilisateur a assez de points
  */
 export const pointsToDiscount = (points, orderAmount) => {
-  // Il faut 100 points pour obtenir 10% de réduction
+  // Il faut 100 points pour obtenir 15% de réduction
   if (points >= POINTS_FOR_DISCOUNT) {
     return {
       canUse: true,
