@@ -1,28 +1,65 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import PromoCode from './PromoCode'
-import { applyPromoCodeToTotal } from '../services/promoService'
+import { applyPromoCodeToTotal, validatePromoCode } from '../services/promoService'
 import './Cart.css'
 
 function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, user = null }) {
   const [appliedPromo, setAppliedPromo] = useState(null)
   
-  // Vérifier si c'est samedi - DÉSACTIVÉ TEMPORAIREMENT
-  // const today = new Date()
-  // const dayOfWeek = today.getDay()
-  const isSaturday = true // Toujours activé temporairement
+  // Vérifier si c'est samedi
+  const today = new Date()
+  const dayOfWeek = today.getDay()
+  const isSaturday = dayOfWeek === 6 // 6 = samedi
+
+  // Vérifier le code promo au chargement depuis sessionStorage
+  useEffect(() => {
+    const checkStoredPromo = async () => {
+      const promoData = sessionStorage.getItem('applied_promo')
+      if (promoData) {
+        try {
+          const promo = JSON.parse(promoData)
+          // Re-vérifier que le code promo est toujours valide
+          const validation = await validatePromoCode(promo.code, user?.uid || null)
+          
+          if (!validation.valid) {
+            // Le code n'est plus valide (déjà utilisé ou autre erreur)
+            sessionStorage.removeItem('applied_promo')
+            setAppliedPromo(null)
+            console.log('Code promo retiré:', validation.error)
+          } else {
+            // Recalculer avec le nouveau total
+            const discount = Math.round(total * (validation.discount / 100))
+            const discountedTotal = total - discount
+            setAppliedPromo({
+              code: promo.code,
+              discount: validation.discount,
+              discountAmount: discount,
+              total: discountedTotal,
+              description: validation.description
+            })
+          }
+        } catch (e) {
+          console.error('Erreur vérification promo:', e)
+          sessionStorage.removeItem('applied_promo')
+          setAppliedPromo(null)
+        }
+      }
+    }
+    
+    checkStoredPromo()
+  }, [user, total]) // Re-vérifier si user ou total change
   
   // Calculer le total avec code promo
   const finalTotal = appliedPromo ? appliedPromo.total : total
   const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0
   
   const handleCheckout = () => {
-    // DÉSACTIVÉ TEMPORAIREMENT
-    // if (!isSaturday) {
-    //   const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
-    //   const currentDay = days[dayOfWeek]
-    //   alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
-    //   return
-    // }
+    if (!isSaturday) {
+      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+      const currentDay = days[dayOfWeek]
+      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+      return
+    }
     onCheckout(appliedPromo)
   }
   return (
@@ -85,8 +122,7 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                 <div className="cart-total">
                   <strong>Total: {finalTotal.toLocaleString()} FCFA</strong>
                 </div>
-                {/* DÉSACTIVÉ TEMPORAIREMENT */}
-                {/* {!isSaturday && (
+                {!isSaturday && (
                   <div style={{ 
                     backgroundColor: '#fee2e2', 
                     border: '1px solid #ef4444', 
@@ -98,15 +134,14 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                   }}>
                     <strong style={{ color: '#dc2626' }}>🔴 Commandes disponibles uniquement le samedi</strong>
                   </div>
-                )} */}
+                )}
                 <button 
                   className="checkout-button" 
                   onClick={handleCheckout}
-                  // disabled={!isSaturday} // DÉSACTIVÉ TEMPORAIREMENT
-                  // style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                  disabled={!isSaturday}
+                  style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
-                  Commander
-                  {/* {isSaturday ? 'Commander' : 'Commandes disponibles uniquement le samedi'} */}
+                  {isSaturday ? 'Commander' : 'Commandes disponibles uniquement le samedi'}
                 </button>
               </div>
             </>

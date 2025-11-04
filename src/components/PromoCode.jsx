@@ -41,19 +41,25 @@ function PromoCode({ onApplyPromo, appliedPromo, total, userId = null }) {
     const discount = Math.round(total * (validation.discount / 100))
     const discountedTotal = total - discount
 
-    onApplyPromo({
+    const promoData = {
       code: promoCode.toUpperCase().trim(),
       discount: validation.discount,
       discountAmount: discount,
       total: discountedTotal,
       description: validation.description
-    })
+    }
+
+    // Sauvegarder dans sessionStorage pour persister entre les sessions
+    sessionStorage.setItem('applied_promo', JSON.stringify(promoData))
+
+    onApplyPromo(promoData)
 
     setPromoCode('')
     setApplying(false)
   }
 
   const handleRemove = () => {
+    sessionStorage.removeItem('applied_promo')
     onApplyPromo(null)
     setPromoCode('')
     setError('')

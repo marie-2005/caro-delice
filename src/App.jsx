@@ -198,25 +198,36 @@ function App() {
 
   const handleOrder = async (orderInfo) => {
     // Vérifier si c'est samedi (jour 6, où 0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    // DÉSACTIVÉ TEMPORAIREMENT
-    // const today = new Date()
-    // const dayOfWeek = today.getDay()
-    // 
-    // if (dayOfWeek !== 6) {
-    //   const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
-    //   const currentDay = days[dayOfWeek]
-    //   alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
-    //   return
-    // }
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    
+    if (dayOfWeek !== 6) {
+      const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+      const currentDay = days[dayOfWeek]
+      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+      return
+    }
     
     const total = getTotalPrice()
     
-    // Récupérer le code promo appliqué si présent
+    // Récupérer le code promo appliqué si présent et RE-VÉRIFIER qu'il est toujours valide
     let appliedPromo = null
     const promoData = sessionStorage.getItem('applied_promo')
     if (promoData) {
       try {
         appliedPromo = JSON.parse(promoData)
+        
+        // RE-VÉRIFIER que le code promo est toujours valide (notamment s'il n'a pas été utilisé entre-temps)
+        const { validatePromoCode } = await import('./services/promoService')
+        const validation = await validatePromoCode(appliedPromo.code, user?.uid || null)
+        
+        if (!validation.valid) {
+          // Le code n'est plus valide (déjà utilisé ou autre erreur)
+          sessionStorage.removeItem('applied_promo')
+          alert(`❌ ${validation.error}\n\nLe code promo a été retiré de votre commande.`)
+          return // Arrêter la création de commande
+        }
+        
         // Vérifier que si c'est BIENVENUE10, l'utilisateur est connecté
         if (appliedPromo.code === 'BIENVENUE10' && !user?.uid) {
           // Nettoyer le code promo et afficher une erreur
