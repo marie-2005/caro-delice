@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import PromoCode from './PromoCode'
 import { applyPromoCodeToTotal, validatePromoCode } from '../services/promoService'
+import { isExceptionalPeriod } from '../services/businessHoursService'
 import './Cart.css'
 
 function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, user = null }) {
   const [appliedPromo, setAppliedPromo] = useState(null)
   
-  // Vérifier si c'est samedi ou dimanche
+  // Vérifier si c'est samedi ou dimanche OU période exceptionnelle
   const today = new Date()
   const dayOfWeek = today.getDay()
   const isSaturday = dayOfWeek === 6 // 6 = samedi
   const isSunday = dayOfWeek === 0 // 0 = dimanche
-  const isOpenDay = isSaturday || isSunday
+  const isExceptional = isExceptionalPeriod()
+  const isOpenDay = isSaturday || isSunday || isExceptional
 
   // Vérifier le code promo au chargement depuis sessionStorage
   useEffect(() => {
@@ -124,6 +126,19 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                 <div className="cart-total">
                   <strong>Total: {finalTotal.toLocaleString()} FCFA</strong>
                 </div>
+                {isExceptional && (
+                  <div style={{ 
+                    backgroundColor: '#dbeafe', 
+                    border: '1px solid #3b82f6', 
+                    borderRadius: '0.5rem', 
+                    padding: '0.75rem', 
+                    marginBottom: '0.75rem',
+                    textAlign: 'center',
+                    fontSize: '0.875rem'
+                  }}>
+                    <strong style={{ color: '#1e40af' }}>🎉 Période exceptionnelle : Commandes ouvertes jusqu'à dimanche 18h</strong>
+                  </div>
+                )}
                 {!isOpenDay && (
                   <div style={{ 
                     backgroundColor: '#fee2e2', 

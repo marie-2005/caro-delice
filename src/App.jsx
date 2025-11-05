@@ -22,6 +22,7 @@ import Profile from './components/Profile'
 import Toast from './components/Toast'
 import Dashboard from './components/Dashboard'
 import { getStatusChangeNotification } from './services/orderStatusService'
+import { isExceptionalPeriod } from './services/businessHoursService'
 import './App.css'
 
 function App() {
@@ -197,11 +198,12 @@ function App() {
   }
 
   const handleOrder = async (orderInfo) => {
-    // Vérifier si c'est samedi ou dimanche (0 = dimanche, 6 = samedi)
+    // Vérifier si c'est samedi ou dimanche OU période exceptionnelle (0 = dimanche, 6 = samedi)
     const today = new Date()
     const dayOfWeek = today.getDay()
+    const isExceptional = isExceptionalPeriod()
     
-    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+    if (dayOfWeek !== 6 && dayOfWeek !== 0 && !isExceptional) {
       const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
       const currentDay = days[dayOfWeek]
       alert(`❌ Les commandes ne sont disponibles que le samedi (8h-22h) et le dimanche (8h-18h).\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi ou le dimanche pour passer votre commande.`)

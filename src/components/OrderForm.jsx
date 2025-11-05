@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { isCurrentlyOpen, getBusinessStatus } from '../services/businessHoursService'
+import { isCurrentlyOpen, getBusinessStatus, isExceptionalPeriod } from '../services/businessHoursService'
 import './OrderForm.css'
 
 function OrderForm({ total, onClose, onOrder, user, userProfile }) {
@@ -15,12 +15,13 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const [isOpen, setIsOpen] = useState(isCurrentlyOpen())
   const [businessStatus, setBusinessStatus] = useState(getBusinessStatus())
   
-  // Vérifier si c'est samedi ou dimanche
+  // Vérifier si c'est samedi ou dimanche OU période exceptionnelle
   const today = new Date()
   const dayOfWeek = today.getDay()
   const isSaturday = dayOfWeek === 6 // 6 = samedi
   const isSunday = dayOfWeek === 0 // 0 = dimanche
-  const isOpenDay = isSaturday || isSunday
+  const isExceptional = isExceptionalPeriod()
+  const isOpenDay = isSaturday || isSunday || isExceptional
 
   // Vérifier les horaires toutes les minutes
   useEffect(() => {
@@ -38,11 +39,12 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Vérifier si c'est samedi ou dimanche (0 = dimanche, 6 = samedi)
+    // Vérifier si c'est samedi ou dimanche OU période exceptionnelle (0 = dimanche, 6 = samedi)
     const today = new Date()
     const dayOfWeek = today.getDay()
+    const isExceptional = isExceptionalPeriod()
     
-    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+    if (dayOfWeek !== 6 && dayOfWeek !== 0 && !isExceptional) {
       const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
       const currentDay = days[dayOfWeek]
       alert(`❌ Les commandes ne sont disponibles que le samedi (8h-22h) et le dimanche (8h-18h).\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi ou le dimanche pour passer votre commande.`)

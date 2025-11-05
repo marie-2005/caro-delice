@@ -1,5 +1,43 @@
 // Service de gestion des horaires de service
 
+/**
+ * Période exceptionnelle : autoriser les commandes jusqu'à dimanche 18h
+ * Calcule la date de fin (dimanche 18h00)
+ */
+const getExceptionalPeriodEnd = () => {
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0 = dimanche
+  
+  // Si on est dimanche après 18h, la période exceptionnelle est terminée
+  if (dayOfWeek === 0 && today.getHours() >= 18) {
+    return null // Période terminée
+  }
+  
+  // Trouver le prochain dimanche à 18h00
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
+  const nextSunday = new Date(today)
+  nextSunday.setDate(today.getDate() + daysUntilSunday)
+  nextSunday.setHours(18, 0, 0, 0) // 18h00
+  nextSunday.setMinutes(0, 0, 0) // 18h00 exactement
+  
+  return nextSunday
+}
+
+/**
+ * Vérifier si on est dans la période exceptionnelle
+ * @returns {boolean}
+ */
+export const isExceptionalPeriod = () => {
+  const now = new Date()
+  const endDate = getExceptionalPeriodEnd()
+  
+  if (!endDate) {
+    return false // Période terminée
+  }
+  
+  return now <= endDate
+}
+
 // Configuration des horaires (peut être déplacée dans Firebase plus tard)
 const BUSINESS_HOURS = {
   // Format: { day: { open: "HH:MM", close: "HH:MM" } }
@@ -41,9 +79,27 @@ export const isCurrentlyOpen = () => {
 
 /**
  * Obtenir le message d'état (ouvert/fermé)
- * @returns {Object} { isOpen, message, nextOpen }
+ * @returns {Object} { isOpen, message, nextOpen, isExceptional }
  */
 export const getBusinessStatus = () => {
+  // Vérifier si on est en période exceptionnelle
+  const exceptional = isExceptionalPeriod()
+  
+  if (exceptional) {
+    const endDate = getExceptionalPeriodEnd()
+    if (endDate) {
+      const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+      const endDay = dayNames[endDate.getDay()]
+      const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`
+      return {
+        isOpen: true,
+        message: `Période exceptionnelle : Commandes ouvertes jusqu'à ${endDay} ${endTime}`,
+        nextOpen: null,
+        isExceptional: true
+      }
+    }
+  }
+  
   const todayHours = getTodayHours()
   const now = new Date()
   const currentDay = now.getDay()
@@ -56,13 +112,15 @@ export const getBusinessStatus = () => {
       return {
         isOpen: true,
         message: `Ouvert aujourd'hui jusqu'à ${todayHours.close}`,
-        nextOpen: null
+        nextOpen: null,
+        isExceptional: false
       }
     } else if (currentTime < todayHours.open) {
       return {
         isOpen: false,
         message: `Fermé - Réouverture aujourd'hui à ${todayHours.open}`,
-        nextOpen: todayHours.open
+        nextOpen: todayHours.open,
+        isExceptional: false
       }
     } else {
       // Après la fermeture, chercher le prochain jour ouvert
@@ -94,7 +152,8 @@ const getNextOpenDay = (fromDate) => {
       return {
         isOpen: false,
         message: `Fermé - Réouverture ${dayName} à ${hours.open}`,
-        nextOpen: `${dayName} ${hours.open}`
+        nextOpen: `${dayName} ${hours.open}`,
+        isExceptional: false
       }
     }
   }
@@ -102,7 +161,8 @@ const getNextOpenDay = (fromDate) => {
   return {
     isOpen: false,
     message: 'Fermé - Aucune ouverture prévue',
-    nextOpen: null
+    nextOpen: null,
+    isExceptional: false
   }
 }
 

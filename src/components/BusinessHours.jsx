@@ -5,6 +5,11 @@ import './BusinessHours.css'
 function BusinessHours() {
   const status = getBusinessStatus()
 
+  // Ne rien afficher pendant la période exceptionnelle
+  if (status.isExceptional) {
+    return null
+  }
+
   return (
     <div className="business-hours">
       <div className={`hours-status ${status.isOpen ? 'open' : 'closed'}`}>
