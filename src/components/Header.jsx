@@ -58,7 +58,7 @@ function Header({
           />
           <div className="logo-text">
             <h1>Les Délices de Caro</h1>
-            <p>Ouvert uniquement les samedis</p>
+            <p>Ouvert samedi 8h-22h et dimanche 8h-18h</p>
           </div>
         </div>
         <div className="header-actions">

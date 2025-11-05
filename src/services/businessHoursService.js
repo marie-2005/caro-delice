@@ -4,7 +4,7 @@
 const BUSINESS_HOURS = {
   // Format: { day: { open: "HH:MM", close: "HH:MM" } }
   // day: 0 = dimanche, 1 = lundi, ..., 6 = samedi
-  0: null, // Dimanche - fermé
+  0: { open: "08:00", close: "18:00" }, // Dimanche - ouvert de 8h à 18h
   1: null, // Lundi - fermé
   2: null, // Mardi - fermé
   3: null, // Mercredi - fermé

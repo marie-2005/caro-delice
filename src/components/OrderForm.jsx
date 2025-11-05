@@ -15,10 +15,12 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const [isOpen, setIsOpen] = useState(isCurrentlyOpen())
   const [businessStatus, setBusinessStatus] = useState(getBusinessStatus())
   
-  // Vérifier si c'est samedi
+  // Vérifier si c'est samedi ou dimanche
   const today = new Date()
   const dayOfWeek = today.getDay()
   const isSaturday = dayOfWeek === 6 // 6 = samedi
+  const isSunday = dayOfWeek === 0 // 0 = dimanche
+  const isOpenDay = isSaturday || isSunday
 
   // Vérifier les horaires toutes les minutes
   useEffect(() => {
@@ -36,14 +38,14 @@ function OrderForm({ total, onClose, onOrder, user, userProfile }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Vérifier si c'est samedi (jour 6, où 0 = dimanche, 1 = lundi, ..., 6 = samedi)
+    // Vérifier si c'est samedi ou dimanche (0 = dimanche, 6 = samedi)
     const today = new Date()
     const dayOfWeek = today.getDay()
     
-    if (dayOfWeek !== 6) {
+    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
       const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
       const currentDay = days[dayOfWeek]
-      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+      alert(`❌ Les commandes ne sont disponibles que le samedi (8h-22h) et le dimanche (8h-18h).\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi ou le dimanche pour passer votre commande.`)
       return
     }
     

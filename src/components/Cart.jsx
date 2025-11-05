@@ -6,10 +6,12 @@ import './Cart.css'
 function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, user = null }) {
   const [appliedPromo, setAppliedPromo] = useState(null)
   
-  // Vérifier si c'est samedi
+  // Vérifier si c'est samedi ou dimanche
   const today = new Date()
   const dayOfWeek = today.getDay()
   const isSaturday = dayOfWeek === 6 // 6 = samedi
+  const isSunday = dayOfWeek === 0 // 0 = dimanche
+  const isOpenDay = isSaturday || isSunday
 
   // Vérifier le code promo au chargement depuis sessionStorage
   useEffect(() => {
@@ -54,10 +56,10 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
   const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0
   
   const handleCheckout = () => {
-    if (!isSaturday) {
+    if (!isOpenDay) {
       const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
       const currentDay = days[dayOfWeek]
-      alert(`❌ Les commandes ne sont disponibles que le samedi.\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi pour passer votre commande.`)
+      alert(`❌ Les commandes ne sont disponibles que le samedi (8h-22h) et le dimanche (8h-18h).\n\nAujourd'hui, nous sommes ${currentDay}.\n\nMerci de revenir le samedi ou le dimanche pour passer votre commande.`)
       return
     }
     onCheckout(appliedPromo)
@@ -122,7 +124,7 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                 <div className="cart-total">
                   <strong>Total: {finalTotal.toLocaleString()} FCFA</strong>
                 </div>
-                {!isSaturday && (
+                {!isOpenDay && (
                   <div style={{ 
                     backgroundColor: '#fee2e2', 
                     border: '1px solid #ef4444', 
@@ -132,16 +134,16 @@ function Cart({ cart, total, onClose, onRemove, onUpdateQuantity, onCheckout, us
                     textAlign: 'center',
                     fontSize: '0.875rem'
                   }}>
-                    <strong style={{ color: '#dc2626' }}>🔴 Commandes disponibles uniquement le samedi</strong>
+                    <strong style={{ color: '#dc2626' }}>🔴 Commandes disponibles samedi (8h-22h) et dimanche (8h-18h)</strong>
                   </div>
                 )}
                 <button 
                   className="checkout-button" 
                   onClick={handleCheckout}
-                  disabled={!isSaturday}
-                  style={!isSaturday ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                  disabled={!isOpenDay}
+                  style={!isOpenDay ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
-                  {isSaturday ? 'Commander' : 'Commandes disponibles uniquement le samedi'}
+                  {isOpenDay ? 'Commander' : 'Commandes disponibles samedi et dimanche'}
                 </button>
               </div>
             </>
