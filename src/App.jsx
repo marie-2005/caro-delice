@@ -6,12 +6,14 @@ import {
   getAllOrders, 
   getCustomerOrders, 
   updateOrderStatus, 
+  updateOrder,
   deleteOrder,
   deleteAllOrders,
   getUserRole,
   getUserProfile,
   updateUserProfile
 } from './services/firebaseService'
+import { menuItems } from './components/Menu'
 import Header from './components/Header'
 import Menu from './components/Menu'
 import Cart from './components/Cart'
@@ -367,6 +369,16 @@ function App() {
     }
   }
 
+  const handleUpdateOrder = async (orderId, orderData) => {
+    try {
+      await updateOrder(orderId, orderData)
+      // La liste des commandes sera automatiquement mise à jour via onSnapshot
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error)
+      throw error // Re-lancer l'erreur pour que EditOrderModal puisse l'afficher
+    }
+  }
+
   const handleLogin = (email) => {
     setShowLogin(false)
     // La fonction onAuthStateChanged va mettre à jour user automatiquement
@@ -453,6 +465,7 @@ function App() {
             orders={orders}
             onUpdateStatus={handleUpdateOrderStatus}
             onDelete={handleDeleteOrder}
+            onUpdateOrder={handleUpdateOrder}
             onDeleteAll={isAdmin ? async () => {
               if (window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer TOUTES les commandes ? Cette action est irréversible !')) {
                 try {
@@ -468,6 +481,7 @@ function App() {
             currentUserId={user?.uid}
             user={user}
             userProfile={userProfile}
+            menuItems={menuItems}
           />
         )}
       </main>

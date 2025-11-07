@@ -189,6 +189,49 @@ export const updateOrderStatus = async (orderId, newStatus, oldStatus = null) =>
   }
 }
 
+// Mettre à jour une commande (articles, quantités, notes, etc.)
+export const updateOrder = async (orderId, orderData) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId)
+    
+    // Récupérer la commande actuelle pour vérifier le statut
+    const orderSnap = await getDoc(orderRef)
+    if (!orderSnap.exists()) {
+      throw new Error('Commande non trouvée')
+    }
+    
+    const currentOrder = orderSnap.data()
+    
+    // Vérifier que le statut est "en attente"
+    if (currentOrder.status !== 'en attente') {
+      throw new Error('Seules les commandes en attente peuvent être modifiées')
+    }
+    
+    // Calculer le nouveau total basé sur les nouveaux articles
+    const newTotal = orderData.items.reduce((total, item) => {
+      return total + (item.price * item.quantity)
+    }, 0)
+    
+    // Mettre à jour la commande
+    await updateDoc(orderRef, {
+      items: orderData.items,
+      total: newTotal,
+      notes: orderData.notes || currentOrder.notes || '',
+      deliveryType: orderData.deliveryType || currentOrder.deliveryType,
+      roomNumber: orderData.roomNumber || currentOrder.roomNumber || null,
+      deliveryAddress: orderData.deliveryType === 'livraison' 
+        ? `Chambre ${orderData.roomNumber || currentOrder.roomNumber}` 
+        : 'Chambre C-75',
+      updatedAt: new Date().toISOString()
+    })
+    
+    return { success: true, newTotal }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la commande:', error)
+    throw error
+  }
+}
+
 // Supprimer une commande
 export const deleteOrder = async (orderId, orderData = null, isAdminDelete = false) => {
   try {

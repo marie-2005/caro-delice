@@ -4,11 +4,12 @@ import OrderRating from './OrderRating'
 import DeliveryTracking from './DeliveryTracking'
 import OrderPrint from './OrderPrint'
 import DeletedOrderNotification from './DeletedOrderNotification'
+import EditOrderModal from './EditOrderModal'
 import { getOrderRating } from '../services/ratingService'
 import { getDeletedOrderNotifications, markNotificationAsRead } from '../services/deletedOrderNotificationService'
 import './OrdersList.css'
 
-function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId, user, userProfile }) {
+function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId, user, userProfile, onUpdateOrder, menuItems }) {
   // Par défaut, afficher les commandes du samedi en cours pour l'admin
   const [dateFilter, setDateFilter] = useState(isAdmin ? 'ce-samedi' : 'toutes')
   const [statusFilter, setStatusFilter] = useState('tous')
@@ -16,6 +17,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
   const [printOrderId, setPrintOrderId] = useState(null)
   const [trackingOrderId, setTrackingOrderId] = useState(null)
   const [deletedOrderNotification, setDeletedOrderNotification] = useState(null)
+  const [editOrderId, setEditOrderId] = useState(null)
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue'
     const date = new Date(dateString)
@@ -321,6 +323,10 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
                   trackingOrderId={trackingOrderId}
                   setTrackingOrderId={setTrackingOrderId}
                   currentUserId={currentUserId}
+                  editOrderId={editOrderId}
+                  setEditOrderId={setEditOrderId}
+                  onUpdateOrder={onUpdateOrder}
+                  menuItems={menuItems}
                 />
             ))}
           </div>
@@ -342,7 +348,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
   )
 }
 
-function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin, ratingOrderId, setRatingOrderId, printOrderId, setPrintOrderId, trackingOrderId, setTrackingOrderId, currentUserId }) {
+function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin, ratingOrderId, setRatingOrderId, printOrderId, setPrintOrderId, trackingOrderId, setTrackingOrderId, currentUserId, editOrderId, setEditOrderId, onUpdateOrder, menuItems }) {
   return (
     <div className="order-card">
       <div className="order-header-card">
@@ -431,10 +437,18 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
       {!isAdmin && order.status === 'en attente' && (
         <div className="order-actions">
           <button
+            className="edit-button"
+            onClick={() => setEditOrderId(order.id)}
+            title="Modifier ma commande"
+            style={{width: '100%', marginTop: '0.5rem', marginBottom: '0.5rem'}}
+          >
+            ✏️ Modifier ma commande
+          </button>
+          <button
             className="delete-button"
             onClick={() => onDelete(order.id)}
             title="Annuler ma commande"
-            style={{width: '100%', marginTop: '0.5rem'}}
+            style={{width: '100%'}}
           >
             Annuler ma commande
           </button>
@@ -488,6 +502,16 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
         <DeliveryTracking
           order={order}
           onClose={() => setTrackingOrderId(null)}
+        />
+      )}
+
+      {/* Modal de modification */}
+      {editOrderId === order.id && (
+        <EditOrderModal
+          order={order}
+          onClose={() => setEditOrderId(null)}
+          onUpdate={onUpdateOrder}
+          menuItems={menuItems}
         />
       )}
     </div>

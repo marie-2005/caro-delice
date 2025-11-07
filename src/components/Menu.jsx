@@ -4,7 +4,7 @@ import { getLocalFavorites, toggleLocalFavorite } from '../services/favoritesSer
 import { getStock, isInStock } from '../services/stockService'
 import './Menu.css'
 
-const menuItems = [
+export const menuItems = [
   {
     id: 1,
     name: 'Crêpe au Cérélac',
