@@ -4,12 +4,14 @@ import OrderRating from './OrderRating'
 import DeliveryTracking from './DeliveryTracking'
 import OrderPrint from './OrderPrint'
 import DeletedOrderNotification from './DeletedOrderNotification'
+import AcceptedOrderNotification from './AcceptedOrderNotification'
 import EditOrderModal from './EditOrderModal'
 import { getOrderRating } from '../services/ratingService'
 import { getDeletedOrderNotifications, markNotificationAsRead } from '../services/deletedOrderNotificationService'
+import { getAcceptedOrderNotifications, markNotificationAsRead as markAcceptedNotificationAsRead } from '../services/acceptedOrderNotificationService'
 import './OrdersList.css'
 
-function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId, user, userProfile, onUpdateOrder, menuItems }) {
+function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId, user, userProfile, onUpdateOrder, menuItems, onValidateOrder }) {
   // Par défaut, afficher les commandes du samedi en cours pour l'admin
   const [dateFilter, setDateFilter] = useState(isAdmin ? 'ce-samedi' : 'toutes')
   const [statusFilter, setStatusFilter] = useState('tous')
@@ -17,6 +19,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
   const [printOrderId, setPrintOrderId] = useState(null)
   const [trackingOrderId, setTrackingOrderId] = useState(null)
   const [deletedOrderNotification, setDeletedOrderNotification] = useState(null)
+  const [acceptedOrderNotification, setAcceptedOrderNotification] = useState(null)
   const [editOrderId, setEditOrderId] = useState(null)
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue'
@@ -212,7 +215,36 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
     }
   }, [user, isAdmin, currentUserId, userProfile, deletedOrderNotification])
 
-  // Gérer la fermeture de la notification
+  // Écouter les notifications de commandes acceptées (uniquement pour les clients)
+  useEffect(() => {
+    if (isAdmin || !user) {
+      return
+    }
+
+    const customerId = currentUserId || user?.uid
+    const customerEmail = user?.email || userProfile?.email
+
+    if (!customerId && !customerEmail) {
+      return
+    }
+
+    const unsubscribe = getAcceptedOrderNotifications(
+      customerId,
+      customerEmail,
+      (notifications) => {
+        // Afficher la première notification non lue
+        if (notifications.length > 0 && !acceptedOrderNotification) {
+          setAcceptedOrderNotification(notifications[0])
+        }
+      }
+    )
+
+    return () => {
+      unsubscribe()
+    }
+  }, [user, isAdmin, currentUserId, userProfile, acceptedOrderNotification])
+
+  // Gérer la fermeture de la notification de suppression
   const handleCloseNotification = async () => {
     if (deletedOrderNotification) {
       try {
@@ -222,6 +254,20 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
         console.error('Erreur lors de la fermeture de la notification:', error)
         // Fermer quand même le modal même en cas d'erreur
         setDeletedOrderNotification(null)
+      }
+    }
+  }
+
+  // Gérer la fermeture de la notification d'acceptation
+  const handleCloseAcceptedNotification = async () => {
+    if (acceptedOrderNotification) {
+      try {
+        await markAcceptedNotificationAsRead(acceptedOrderNotification.id)
+        setAcceptedOrderNotification(null)
+      } catch (error) {
+        console.error('Erreur lors de la fermeture de la notification:', error)
+        // Fermer quand même le modal même en cas d'erreur
+        setAcceptedOrderNotification(null)
       }
     }
   }
@@ -327,6 +373,7 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
                   setEditOrderId={setEditOrderId}
                   onUpdateOrder={onUpdateOrder}
                   menuItems={menuItems}
+                  onValidateOrder={onValidateOrder}
                 />
             ))}
           </div>
@@ -344,11 +391,19 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
           onClose={handleCloseNotification}
         />
       )}
+
+      {/* Modal de notification de commande acceptée */}
+      {acceptedOrderNotification && (
+        <AcceptedOrderNotification
+          notification={acceptedOrderNotification}
+          onClose={handleCloseAcceptedNotification}
+        />
+      )}
     </div>
   )
 }
 
-function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin, ratingOrderId, setRatingOrderId, printOrderId, setPrintOrderId, trackingOrderId, setTrackingOrderId, currentUserId, editOrderId, setEditOrderId, onUpdateOrder, menuItems }) {
+function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdateStatus, onDelete, isAdmin, ratingOrderId, setRatingOrderId, printOrderId, setPrintOrderId, trackingOrderId, setTrackingOrderId, currentUserId, editOrderId, setEditOrderId, onUpdateOrder, menuItems, onValidateOrder }) {
   return (
     <div className="order-card">
       <div className="order-header-card">
@@ -396,8 +451,8 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
         <strong>Total: {order.total.toLocaleString()} FCFA</strong>
       </div>
 
-      {/* Estimation du temps de préparation */}
-      {!isAdmin && (
+      {/* Estimation du temps de préparation - seulement si la commande est acceptée */}
+      {!isAdmin && order.status !== 'en attente' && (
         <div className="order-time-estimate">
           <span className="time-icon">⏱️</span>
           <span className="time-text">{getRemainingTime(order.status, order.createdAt)}</span>
@@ -406,6 +461,15 @@ function OrderCard({ order, formatDate, getStatusColor, getStatusLabel, onUpdate
 
       {isAdmin && (
         <div className="order-actions">
+          {order.status === 'en attente' && (
+            <button
+              className="validate-button"
+              onClick={() => onValidateOrder(order.id)}
+              title="Valider la commande"
+            >
+              ✅ Valider la commande
+            </button>
+          )}
           <select
             value={order.status}
             onChange={(e) => onUpdateStatus(order.id, e.target.value)}

@@ -7,6 +7,7 @@ import {
   getCustomerOrders, 
   updateOrderStatus, 
   updateOrder,
+  validateOrder,
   deleteOrder,
   deleteAllOrders,
   getUserRole,
@@ -379,6 +380,16 @@ function App() {
     }
   }
 
+  const handleValidateOrder = async (orderId) => {
+    try {
+      await validateOrder(orderId)
+      alert('✅ Commande validée avec succès! Le client a été notifié.')
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error)
+      alert('Erreur lors de la validation de la commande: ' + (error.message || 'Erreur inconnue'))
+    }
+  }
+
   const handleLogin = (email) => {
     setShowLogin(false)
     // La fonction onAuthStateChanged va mettre à jour user automatiquement
@@ -466,6 +477,7 @@ function App() {
             onUpdateStatus={handleUpdateOrderStatus}
             onDelete={handleDeleteOrder}
             onUpdateOrder={handleUpdateOrder}
+            onValidateOrder={handleValidateOrder}
             onDeleteAll={isAdmin ? async () => {
               if (window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer TOUTES les commandes ? Cette action est irréversible !')) {
                 try {

@@ -189,6 +189,48 @@ export const updateOrderStatus = async (orderId, newStatus, oldStatus = null) =>
   }
 }
 
+// Valider une commande (passer de "en attente" à "en préparation" et notifier le client)
+export const validateOrder = async (orderId) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId)
+    
+    // Récupérer la commande actuelle
+    const orderSnap = await getDoc(orderRef)
+    if (!orderSnap.exists()) {
+      throw new Error('Commande non trouvée')
+    }
+    
+    const currentOrder = orderSnap.data()
+    
+    // Vérifier que le statut est "en attente"
+    if (currentOrder.status !== 'en attente') {
+      throw new Error('Seules les commandes en attente peuvent être validées')
+    }
+    
+    // Mettre à jour le statut à "en préparation"
+    await updateDoc(orderRef, {
+      status: 'en préparation',
+      updatedAt: new Date().toISOString()
+    })
+
+    // Créer une notification dans l'interface pour le client (ne bloque pas si ça échoue)
+    try {
+      const { createAcceptedOrderNotification } = await import('./acceptedOrderNotificationService')
+      await createAcceptedOrderNotification({
+        ...currentOrder,
+        orderId: orderId
+      })
+    } catch (notifError) {
+      console.warn('Notification d\'acceptation non créée:', notifError)
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Erreur lors de la validation de la commande:', error)
+    throw error
+  }
+}
+
 // Mettre à jour une commande (articles, quantités, notes, etc.)
 export const updateOrder = async (orderId, orderData) => {
   try {

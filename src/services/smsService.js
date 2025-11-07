@@ -182,3 +182,39 @@ export const sendOrderConfirmationSMS = async (orderData) => {
   return result
   */
 }
+
+/**
+ * Envoyer une notification SMS au client lorsque sa commande est acceptée/validée
+ * DÉSACTIVÉ TEMPORAIREMENT - Réactiver quand vous payez un service SMS
+ */
+export const sendOrderAcceptedSMS = async (orderData) => {
+  // SMS désactivés pour l'instant
+  // Les clients reçoivent déjà les notifications toast en temps réel
+  
+  console.log('📧 SMS de validation désactivé - Utilisez les notifications toast')
+  return { success: false, error: 'SMS désactivé temporairement' }
+  
+  /*
+  // CODE À RÉACTIVER QUAND VOUS PAYEZ
+  const customerPhone = orderData.customerPhone || orderData.phone
+
+  if (!customerPhone) {
+    console.warn('Pas de numéro de téléphone pour envoyer SMS au client')
+    return { success: false, error: 'Pas de numéro de téléphone' }
+  }
+
+  const message = `✅ Votre commande #${orderData.orderId?.slice(-6) || 'N/A'} a été acceptée!\n` +
+    `🍳 Elle est maintenant en cours de préparation.\n` +
+    `Total: ${orderData.total.toLocaleString()} FCFA\n` +
+    `Merci pour votre commande!`
+
+  const apiKey = getTextbeltKey()
+  const result = await sendSMSWithKey(customerPhone, message, apiKey)
+  
+  if (result.quotaRemaining === 0) {
+    console.warn('⚠️ Quota Textbelt atteint pour cette clé')
+  }
+  
+  return result
+  */
+}
