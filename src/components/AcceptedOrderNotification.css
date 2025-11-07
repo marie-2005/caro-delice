@@ -18,15 +18,44 @@
   border-radius: 1rem;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border: 2px solid #10b981;
-  overflow: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .accepted-order-header {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   padding: 1.5rem;
   text-align: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.accepted-order-close-x {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.accepted-order-close-x:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .accepted-order-header h2 {
@@ -39,6 +68,9 @@
 .accepted-order-content {
   padding: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .accepted-order-icon {
@@ -136,6 +168,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .accepted-order-close-btn:hover {

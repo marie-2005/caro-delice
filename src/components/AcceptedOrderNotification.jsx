@@ -22,6 +22,9 @@ function AcceptedOrderNotification({ notification, onClose }) {
       <div className="accepted-order-modal">
         <div className="accepted-order-header">
           <h2>Commande acceptée !</h2>
+          <button className="accepted-order-close-x" onClick={onClose} title="Fermer">
+            ×
+          </button>
         </div>
         <div className="accepted-order-content">
           <div className="accepted-order-icon">✅</div>
