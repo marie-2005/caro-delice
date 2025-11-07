@@ -99,3 +99,94 @@ export const sendNewOrderNotification = async (orderData) => {
   }
 }
 
+/**
+ * Envoyer une notification email au client lorsqu'un admin supprime sa commande
+ * @param {Object} orderData - Données de la commande supprimée
+ * @param {string} orderData.orderId - ID de la commande
+ * @param {string} orderData.customerName - Nom du client
+ * @param {string} orderData.customerEmail - Email du client
+ * @param {string} orderData.customerPhone - Téléphone du client
+ * @param {number} orderData.total - Montant total
+ * @param {Array} orderData.items - Articles commandés
+ * @param {string} orderData.status - Statut de la commande
+ */
+export const sendOrderDeletedNotification = async (orderData) => {
+  try {
+    // Vérifier si EmailJS est configuré
+    const emailJsPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+    const emailJsServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID
+    const emailJsTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+
+    if (!emailJsPublicKey || !emailJsServiceId || !emailJsTemplateId) {
+      console.warn('⚠️ EmailJS non configuré - Notification de suppression non envoyée')
+      return { success: false, reason: 'EmailJS non configuré' }
+    }
+
+    // Vérifier que le client a un email
+    if (!orderData.customerEmail) {
+      console.warn('⚠️ Pas d\'email client - Notification de suppression non envoyée')
+      return { success: false, reason: 'Pas d\'email client' }
+    }
+
+    // Charger EmailJS dynamiquement
+    if (typeof window === 'undefined') {
+      return { success: false, reason: 'Hors navigateur' }
+    }
+
+    // Importer EmailJS
+    const emailjs = (await import('@emailjs/browser')).default
+    emailjs.init(emailJsPublicKey)
+
+    // Formater les articles pour l'email
+    const itemsList = orderData.items
+      .map(item => `• ${item.quantity}x ${item.name} - ${item.price.toLocaleString()} FCFA`)
+      .join('\n')
+
+    // Préparer les données de l'email
+    const templateParams = {
+      to_email: orderData.customerEmail,
+      order_id: orderData.orderId,
+      customer_name: orderData.customerName || 'Cher client',
+      customer_phone: orderData.customerPhone || 'Non renseigné',
+      customer_email: orderData.customerEmail,
+      total: orderData.total.toLocaleString(),
+      items: itemsList,
+      status: orderData.status || 'supprimée',
+      delivery_type: orderData.deliveryType === 'livraison' 
+        ? `Livraison: Chambre ${orderData.roomNumber || 'Non renseigné'}`
+        : 'Retrait: Chambre C-75',
+      payment_method: orderData.paymentMethod || 'Non renseigné',
+      notes: orderData.notes || 'Aucune note',
+      date: new Date(orderData.createdAt || new Date()).toLocaleString('fr-FR'),
+      message: `Votre commande #${orderData.orderId.slice(-6)} a été supprimée par l'administrateur`
+    }
+
+    // Log des paramètres avant envoi
+    console.log('📧 Envoi de notification de suppression au client...', {
+      serviceId: emailJsServiceId,
+      templateId: emailJsTemplateId,
+      to: orderData.customerEmail,
+      orderId: orderData.orderId
+    })
+
+    // Envoyer l'email
+    const response = await emailjs.send(
+      emailJsServiceId,
+      emailJsTemplateId,
+      templateParams
+    )
+
+    console.log('✅ Notification de suppression envoyée au client avec succès:', response)
+    return { success: true, response }
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi de la notification de suppression:', error)
+    console.error('Détails:', {
+      message: error.message,
+      status: error.status,
+      text: error.text
+    })
+    // Ne pas bloquer la suppression en cas d'erreur de notification
+    return { success: false, error: error.message || 'Erreur inconnue' }
+  }
+}
+

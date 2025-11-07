@@ -190,9 +190,31 @@ export const updateOrderStatus = async (orderId, newStatus, oldStatus = null) =>
 }
 
 // Supprimer une commande
-export const deleteOrder = async (orderId) => {
+export const deleteOrder = async (orderId, orderData = null, isAdminDelete = false) => {
   try {
+    // Récupérer les données de la commande avant suppression si nécessaire
+    let orderInfo = orderData
+    if (!orderInfo) {
+      const orderRef = doc(db, 'orders', orderId)
+      const orderSnap = await getDoc(orderRef)
+      if (orderSnap.exists()) {
+        orderInfo = { id: orderId, ...orderSnap.data() }
+      }
+    }
+
+    // Supprimer la commande
     await deleteDoc(doc(db, 'orders', orderId))
+
+    // Si c'est un admin qui supprime, créer une notification pour le client
+    if (isAdminDelete && orderInfo) {
+      try {
+        const { createDeletedOrderNotification } = await import('./deletedOrderNotificationService')
+        await createDeletedOrderNotification(orderInfo)
+      } catch (notifError) {
+        // Ignorer les erreurs de notification pour ne pas bloquer la suppression
+        console.warn('Notification de suppression non créée:', notifError)
+      }
+    }
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
     throw error

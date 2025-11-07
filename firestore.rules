@@ -35,8 +35,15 @@ service cloud.firestore {
         )
       );
 
-      // Suppression : seulement admin
-      allow delete: if request.auth != null && isAdmin();
+      // Suppression : admin ou client (seulement ses propres commandes en attente)
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        (
+          (resource.data.customerId == request.auth.uid ||
+           resource.data.customerEmail == request.auth.token.email) &&
+          resource.data.status == 'en attente'
+        )
+      );
     }
 
     // Règles utilisateurs
@@ -100,6 +107,26 @@ service cloud.firestore {
 
       // Admin peut tout faire
       allow read, write: if request.auth != null && isAdmin();
+    }
+
+    // Règles pour les notifications de commandes supprimées
+    match /deletedOrderNotifications/{notificationId} {
+      // Création : seulement admin
+      allow create: if request.auth != null && isAdmin();
+
+      // Lecture : client lit ses propres notifications
+      allow read: if request.auth != null && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.customerEmail == request.auth.token.email ||
+        isAdmin()
+      );
+
+      // Suppression : client peut supprimer ses propres notifications (après avoir cliqué OK)
+      allow delete: if request.auth != null && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.customerEmail == request.auth.token.email ||
+        isAdmin()
+      );
     }
   }
 }

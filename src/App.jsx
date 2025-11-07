@@ -353,9 +353,12 @@ function App() {
     
     if (window.confirm(message)) {
       try {
-        await deleteOrder(orderId)
+        // Passer les données de la commande et indiquer si c'est un admin qui supprime
+        await deleteOrder(orderId, order, isAdmin)
         if (isOwnOrder) {
           alert('Votre commande a été annulée.')
+        } else if (isAdmin) {
+          alert('La commande a été supprimée. Le client sera notifié par email.')
         }
       } catch (error) {
         console.error('Erreur lors de la suppression:', error)
@@ -463,6 +466,8 @@ function App() {
             } : undefined}
             isAdmin={isAdmin}
             currentUserId={user?.uid}
+            user={user}
+            userProfile={userProfile}
           />
         )}
       </main>

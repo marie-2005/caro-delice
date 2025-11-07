@@ -1,18 +1,21 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { getRemainingTime, getPreparationTime } from '../services/orderStatusService'
 import OrderRating from './OrderRating'
 import DeliveryTracking from './DeliveryTracking'
 import OrderPrint from './OrderPrint'
+import DeletedOrderNotification from './DeletedOrderNotification'
 import { getOrderRating } from '../services/ratingService'
+import { getDeletedOrderNotifications, markNotificationAsRead } from '../services/deletedOrderNotificationService'
 import './OrdersList.css'
 
-function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId }) {
+function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, currentUserId, user, userProfile }) {
   // Par défaut, afficher les commandes du samedi en cours pour l'admin
   const [dateFilter, setDateFilter] = useState(isAdmin ? 'ce-samedi' : 'toutes')
   const [statusFilter, setStatusFilter] = useState('tous')
   const [ratingOrderId, setRatingOrderId] = useState(null)
   const [printOrderId, setPrintOrderId] = useState(null)
   const [trackingOrderId, setTrackingOrderId] = useState(null)
+  const [deletedOrderNotification, setDeletedOrderNotification] = useState(null)
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue'
     const date = new Date(dateString)
@@ -178,6 +181,49 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
     return orderList.filter(order => order.status === statusFilter)
   }
 
+  // Écouter les notifications de commandes supprimées (uniquement pour les clients)
+  useEffect(() => {
+    if (isAdmin || !user) {
+      return
+    }
+
+    const customerId = currentUserId || user?.uid
+    const customerEmail = user?.email || userProfile?.email
+
+    if (!customerId && !customerEmail) {
+      return
+    }
+
+    const unsubscribe = getDeletedOrderNotifications(
+      customerId,
+      customerEmail,
+      (notifications) => {
+        // Afficher la première notification non lue
+        if (notifications.length > 0 && !deletedOrderNotification) {
+          setDeletedOrderNotification(notifications[0])
+        }
+      }
+    )
+
+    return () => {
+      unsubscribe()
+    }
+  }, [user, isAdmin, currentUserId, userProfile, deletedOrderNotification])
+
+  // Gérer la fermeture de la notification
+  const handleCloseNotification = async () => {
+    if (deletedOrderNotification) {
+      try {
+        await markNotificationAsRead(deletedOrderNotification.id)
+        setDeletedOrderNotification(null)
+      } catch (error) {
+        console.error('Erreur lors de la fermeture de la notification:', error)
+        // Fermer quand même le modal même en cas d'erreur
+        setDeletedOrderNotification(null)
+      }
+    }
+  }
+
   // Filtrer et trier les commandes
   let filteredOrders = orders
   
@@ -283,6 +329,14 @@ function OrdersList({ orders, onUpdateStatus, onDelete, onDeleteAll, isAdmin, cu
         <div className="orders-empty">
           <p>Aucune commande ne correspond aux filtres sélectionnés.</p>
         </div>
+      )}
+
+      {/* Modal de notification de commande supprimée */}
+      {deletedOrderNotification && (
+        <DeletedOrderNotification
+          notification={deletedOrderNotification}
+          onClose={handleCloseNotification}
+        />
       )}
     </div>
   )
